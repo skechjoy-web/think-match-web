@@ -7,6 +7,7 @@
 <title>THINK &amp; MATCH – Trang MC</title>
 <link rel="icon" href="assets/icon-192.png">
 <link rel="stylesheet" href="css/tm.css">
+<link rel="stylesheet" href="css/screen.css">
 <link rel="stylesheet" href="css/admin.css">
 </head>
 <body class="adm">
@@ -47,56 +48,45 @@
 </div>
 
 <div id="appV" hidden>
-  <header class="top">
-    <div class="tb-brand"><img src="assets/logo.png" alt=""><b id="tbName">THINK &amp; MATCH</b><span class="role" id="tbRole"></span></div>
-    <nav class="tabs" id="tabs">
-      <button data-tab="ctl" class="on" data-t="Điều khiển|Controls"></button>
-      <button data-tab="set" data-t="Cài đặt|Settings"></button>
-      <button data-tab="bank" data-t="Ngân hàng câu hỏi|Question Bank"></button>
-      <button data-tab="acc" data-admin data-t="Tài khoản|Accounts"></button>
-      <button data-tab="his" data-t="Lịch sử|History"></button>
-    </nav>
-    <div class="tb-right">
-      <span class="pill" id="connPill"></span>
-      <button class="btn btn-gold" id="btnOpenPlayer" data-t="Mở màn hình người chơi|Open player screen"></button>
-      <div class="lang-mini" id="langSw"><button data-l="vi">VI</button><button data-l="en">EN</button></div>
-      <span class="who" id="tbUser"></span>
-      <button class="btn btn-ghost" id="btnLogout" data-t="Đăng xuất|Sign out"></button>
-    </div>
-  </header>
+  <!-- Màn hình chơi: giống hệt màn hình trình chiếu, thêm nút điều khiển và bảng điều khiển MC -->
+  <div id="stage"></div>
 
-  <main>
-    <section class="tab on" id="tab-ctl">
-      <div class="ctl">
-        <div class="ccol">
-          <div class="card status" id="cStatus"></div>
-          <div class="card" id="cMatch"></div>
-          <div class="card" id="cTeams"></div>
-          <div class="card" id="cClocks"></div>
-        </div>
-        <div class="ccol wide">
-          <div class="card" id="cFlow"></div>
-          <div class="card">
-            <div class="ch"><b data-t="Bảng ô|Board"></b><span class="muted" id="bHint"></span></div>
-            <div class="bwrap" id="bWrap"><div class="bscale" id="bScale"><div class="board main" id="mBoard"></div></div></div>
-          </div>
-          <div class="card" id="cPick"></div>
-        </div>
+  <!-- Trang cài đặt: mở bằng nút Cài đặt -->
+  <div id="setPage" class="spage" hidden>
+    <header class="sp-top">
+      <div class="tb-brand"><img src="assets/logo.png" alt=""><b data-t="Cài đặt|Settings"></b><span class="role" id="tbRole"></span></div>
+      <div class="tb-right">
+        <span class="who" id="tbUser"></span>
+        <div class="lang-mini" id="langSw"><button data-l="vi">VI</button><button data-l="en">EN</button></div>
+        <button class="btn btn-ghost" id="btnOpenPlayer2" data-t="Mở màn hình trình chiếu|Open projection screen"></button>
+        <button class="btn btn-primary" id="spClose" data-t="Về màn hình chính|Back to main screen"></button>
       </div>
-    </section>
-
-    <section class="tab" id="tab-set"><div class="card" id="setForm"></div></section>
-    <section class="tab" id="tab-bank"><div class="card" id="bankV"></div></section>
-    <section class="tab" id="tab-acc"><div class="card" id="accV"></div></section>
-    <section class="tab" id="tab-his"><div class="card" id="hisV"></div></section>
-  </main>
+    </header>
+    <div class="sp-body">
+      <nav class="sp-nav" id="spNav">
+        <button data-sp="set" class="on" data-t="Chương trình, đội, thời gian, hình, nhạc|Program, teams, timing, images, music"></button>
+        <button data-sp="bank" data-t="Câu hỏi|Questions"></button>
+        <button data-sp="pick" data-t="Màn hình cảm ứng|Touch screen"></button>
+        <button data-sp="acc" data-t="Tài khoản|Accounts"></button>
+        <button data-sp="his" data-t="Lịch sử trận|Match history"></button>
+      </nav>
+      <main class="sp-main">
+        <section class="sp-sec on" id="sp-set"><div class="card" id="setForm"></div></section>
+        <section class="sp-sec" id="sp-bank"><div class="card" id="bankV"></div></section>
+        <section class="sp-sec" id="sp-pick"><div class="card" id="pickV"></div></section>
+        <section class="sp-sec" id="sp-acc"><div class="card" id="meV"></div><div class="card" id="accV" data-admin></div></section>
+        <section class="sp-sec" id="sp-his"><div class="card" id="hisV"></div></section>
+      </main>
+    </div>
+  </div>
 </div>
 
 <div class="modal-bg" id="dlg"><div class="modal adm-modal"><h2 id="dlgT"></h2><div id="dlgB"></div><div class="r" id="dlgR"></div></div></div>
-<div class="atoast" id="toast"></div>
+<div class="atoast" id="atoast"></div>
 <input type="file" id="fileIn" hidden>
 
 <script src="js/common.js"></script>
+<script src="js/screen.js"></script>
 <script src="js/admin.js"></script>
 </body>
 </html>

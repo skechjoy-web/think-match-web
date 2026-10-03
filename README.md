@@ -1,13 +1,14 @@
 # THINK & MATCH – SKECHERS
 
 Game lật ô hai đội do MC điều khiển: vòng chính 4×4 (8 cặp), vòng phụ khi hòa, câu ước lượng, song ngữ VI/EN.
-Trang MC (`/admin`) có đăng nhập và phân quyền Admin/MC. Màn hình người chơi (`/`) chỉ hiển thị và đồng bộ theo thời gian thực.
+Trang MC (`/admin`) có đăng nhập và phân quyền Admin/MC. Màn hình trình chiếu (`/`) có cùng giao diện với trang MC nhưng không có nút điều khiển, và đồng bộ theo thời gian thực. Trang MC có thêm nút Cài đặt mở trang chỉnh hệ thống.
 
 ## Kiến trúc
 - `public/`: giao diện tĩnh.
-  - `index.html` + `js/player.js`: màn hình người chơi.
-  - `admin.html` + `js/admin.js`: trang MC.
-  - `js/common.js`: phần dùng chung.
+  - `js/screen.js` + `css/screen.css`: giao diện trò chơi dùng chung (màn hình chào, màn hình chơi, kết quả).
+  - `index.html` + `js/player.js`: màn hình trình chiếu (không có nút điều khiển, có ghép nối màn hình cảm ứng).
+  - `admin.html` + `js/admin.js`: trang MC (đăng nhập, khung điều khiển MC, trang Cài đặt).
+  - `js/common.js`: đồng bộ, âm thanh, pháo hoa, bảng ô.
 - `api/*.js`: hàm máy chủ trên Vercel (`state`, `config`, `auth`, `action`, `admin`, `device`).
 - `lib/engine.js`: luật chơi và máy trạng thái. Máy chủ là nơi duy nhất quyết định đồng hồ, điểm và quyền lật ô.
 - `lib/api.js`: kiểm tra đăng nhập và quyền cho mọi thao tác; ghi trạng thái có khóa phiên bản.

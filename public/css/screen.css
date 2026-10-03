@@ -1,4 +1,5 @@
-/* Màn hình người chơi / trình chiếu 16:9: bảng ô bên trái, khung thông báo bên phải (không che bảng) */
+/* Màn hình chơi dùng chung cho trang MC và màn hình trình chiếu (16:9).
+   Bảng ô bên trái; bên phải là khung thông báo (trình chiếu) hoặc bảng điều khiển MC (trang MC), cùng vị trí và kích thước. */
 .col{left:36px;top:112px;width:1240px;height:948px}
 .teambar{gap:20px}
 .tcard{padding:0 22px 0 32px}
@@ -9,7 +10,8 @@
 .board.small{left:160px;top:22px;width:920px;height:650px}
 .est{width:1240px}
 
-.msgp{position:absolute;left:1300px;top:112px;width:584px;height:948px;border-radius:24px;background:linear-gradient(165deg,rgba(14,44,110,.92),rgba(5,16,46,.95));border:2px solid rgba(120,200,255,.35);box-shadow:0 20px 60px rgba(0,0,0,.45);padding:34px 34px 30px;display:flex;flex-direction:column;gap:20px;overflow:hidden}
+.side{position:absolute;left:1300px;top:112px;width:584px;height:948px}
+.msgp{border-radius:24px;background:linear-gradient(165deg,rgba(14,44,110,.92),rgba(5,16,46,.95));border:2px solid rgba(120,200,255,.35);box-shadow:0 20px 60px rgba(0,0,0,.45);padding:34px 34px 30px;display:flex;flex-direction:column;gap:20px;overflow:hidden}
 .msgp .tag{align-self:flex-start;font-size:22px;font-weight:900;letter-spacing:.18em;color:var(--cyan);padding:6px 18px;border-radius:40px;border:2px solid var(--cyan)}
 .msgp .tag.gold{color:var(--gold);border-color:var(--gold)}
 .msgp .qt{font-size:44px;font-weight:800;line-height:1.28;overflow-wrap:anywhere}
@@ -55,3 +57,46 @@
 #pairM .r{display:flex;gap:14px;justify-content:center}
 #pairM .r .btn{height:60px;padding:0 30px;font-size:22px}
 #pairM .err{color:#ff8592;font-weight:800;font-size:20px;min-height:28px}
+
+/* bảng điều khiển MC (chỉ trang MC) */
+.panel{left:1300px;width:584px;padding:20px 22px;gap:12px;overflow-y:auto;overflow-x:hidden;transition:none}
+.panel::-webkit-scrollbar{width:8px}
+.panel::-webkit-scrollbar-thumb{background:rgba(160,210,255,.3);border-radius:4px}
+.panel .p-head b{font-size:17px}
+.panel .p-head span{font-size:15px;font-weight:900;letter-spacing:.12em;color:var(--gold)}
+.panel .hint{font-size:21px;padding:12px 14px}
+.panel .warn{font-size:18px;font-weight:800;color:#ffb3bb;background:rgba(255,77,94,.12);border:1px solid rgba(255,77,94,.5);border-radius:12px;padding:8px 12px}
+.panel .sec{font-size:15px}
+.panel .qg button{height:46px;font-size:18px}
+.panel .qprev{min-height:96px;padding:12px 14px}
+.panel .qprev .k{font-size:14px;font-weight:900;letter-spacing:.1em;color:var(--cyan);display:flex;align-items:center;gap:8px}
+.panel .qprev .k i{font-style:normal;font-size:12px;padding:2px 9px;border-radius:12px;background:rgba(255,255,255,.12);color:#cfe}
+.panel .qprev .k i.on{background:#19c37d;color:#032}
+.panel .qprev .q{font-size:21px;-webkit-line-clamp:4}
+.panel .qprev .a{font-size:20px;color:var(--gold)}
+.panel .qprev .a small{font-size:14px;color:#ffe7a3;font-weight:700;margin-left:6px}
+.panel .row{flex-wrap:nowrap}
+.panel .row .btn{height:56px;font-size:19px}
+.panel .row.l .btn{height:84px;font-size:25px}
+.panel .row.xl .btn{height:92px;font-size:28px}
+.panel .row .btn.half{flex:.55}
+.panel .p-foot .row .btn{height:48px;font-size:16px}
+.panel .seg button{height:58px;font-size:20px}
+.panel .seg button:disabled{opacity:.4;cursor:not-allowed}
+.panel .mini-in{height:52px;font-size:21px}
+.panel textarea.mini-in{height:84px;padding:8px 10px;resize:none}
+.panel .flabel{font-size:16px}
+.panel .note-box{font-size:18px}
+.panel .ok-box{border-radius:14px;padding:14px 16px;font-size:24px;font-weight:900;line-height:1.3;text-align:center;background:linear-gradient(90deg,rgba(255,200,61,.2),rgba(255,159,26,.15));border:2px solid var(--gold);color:#fff3c4}
+.panel .ok-box small{display:block;font-size:17px;font-weight:700;color:#ffe7a3;margin-top:4px}
+.panel .small{font-size:15px;color:#9fcaf0;line-height:1.35}
+.panel .lnk{color:#ffb3bb;text-decoration:underline;font-weight:700;font-size:16px;text-align:left}
+.panel .clk{font-size:15px;font-weight:800;color:#bcd9f5;display:flex;justify-content:space-between}
+.panel .clk b{font-size:20px;color:#fff}
+.board.pickable .tile{cursor:pointer}
+.host .board.pickable .cell:hover .front{filter:brightness(1.25)}
+.w-note span{display:inline-block}
+.h-tools .lang button{font-size:16px}
+.host .pauseov{top:104px;border-radius:24px 24px 0 0}
+.panel .note-box{display:block}
+.panel .note-box b{display:inline}
