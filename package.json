@@ -1,0 +1,11 @@
+{
+  "name": "think-match-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "THINK & MATCH - SKECHERS: game lật ô hai đội cho MC điều khiển (web tĩnh, chạy offline sau lần mở đầu).",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "start": "npx --yes serve dist -l 3000"
+  },
+  "engines": { "node": ">=18" }
+}
