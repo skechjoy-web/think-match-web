@@ -56,7 +56,8 @@ Bấm **Cài đặt** để mở trang chỉnh hệ thống, bấm **Về màn h
   4. Bấm **Hủy ghép nối** để thu hồi quyền của màn hình đó.
 
 ## 6. Điều khiển một lượt (vòng chính)
-1. Trên màn hình chào bấm **BẮT ĐẦU**. Hộp thoại cảnh báo nếu thiếu câu hỏi, đáp án hoặc hình. Nhập tên hai đội, chọn đội đi trước, bấm **Vào trận**. Vị trí hình được đảo tự động.
+1. Trên màn hình chào bấm **BẮT ĐẦU**. Hộp thoại cảnh báo nếu thiếu câu hỏi, đáp án hoặc hình. Nhập tên các đội (bấm **+ Thêm đội** nếu cần 3 hoặc 4 đội), chọn đội đi trước, bấm **Vào trận**. Vị trí hình được đảo tự động. Các đội lần lượt chơi theo thứ tự 1 → 2 → 3 → 4 rồi quay lại.
+   Số đội mặc định đặt trong **Cài đặt → Đội chơi**: tối thiểu 2, tối đa 4 đội, mỗi đội có tên và màu riêng.
 2. Trong khung ĐIỀU KHIỂN MC, bấm **BẮT ĐẦU VÒNG CHÍNH**.
 3. Bấm số câu hỏi. Nội dung và đáp án chỉ hiện trong khung MC; màn hình trình chiếu hiện “Mời đội … chuẩn bị”.
 4. Bấm **BẮT ĐẦU TÍNH GIỜ**: câu hỏi hiện lên màn hình trình chiếu và đồng hồ trả lời chạy.
@@ -72,10 +73,10 @@ Bấm **Cài đặt** để mở trang chỉnh hệ thống, bấm **Về màn h
 8. Nút về màn hình chào (ngôi nhà) sẽ tạm dừng đồng hồ. Bấm **TIẾP TỤC** trên màn hình chào để vào lại trận, rồi bấm **▶ Tiếp tục**.
 
 ## 7. Vòng phụ và câu ước lượng
-- Khi hòa điểm, bấm **BẮT ĐẦU VÒNG PHỤ**, chọn câu, bấm **CÔNG BỐ CÂU HỎI**, rồi bấm tên đội giành quyền trả lời.
+- Khi có từ hai đội trở lên cùng điểm cao nhất, chỉ các đội đó vào vòng phụ (các đội còn lại mờ đi). Bấm **BẮT ĐẦU VÒNG PHỤ**, chọn câu, bấm **CÔNG BỐ CÂU HỎI**, rồi bấm tên đội giành quyền trả lời.
 - Nếu đội đầu trả lời sai, đội còn lại được trả lời cùng câu. Trong lúc đó đáp án được giữ kín và nút **Xem đáp án** bị khóa.
-- Muốn công bố sớm, bấm “Bỏ qua quyền trả lời…”. Hệ thống sẽ hỏi xác nhận, vì thao tác này kết thúc quyền trả lời của cả hai đội.
-- Khi hết giờ vòng phụ hoặc hết câu, game chuyển sang câu ước lượng: công bố câu, nhập đáp án hai đội, bấm **SO SÁNH**, rồi **CÔNG BỐ ĐỘI THẮNG**.
+- Muốn công bố sớm, bấm “Bỏ qua quyền trả lời…”. Hệ thống sẽ hỏi xác nhận, vì thao tác này kết thúc quyền trả lời của tất cả các đội. Với 3–4 đội, khi một đội trả lời sai, MC bấm tên đội giành quyền tiếp theo.
+- Khi hết giờ vòng phụ hoặc hết câu, game chuyển sang câu ước lượng: công bố câu, nhập đáp án của từng đội, bấm **SO SÁNH**, rồi **CÔNG BỐ ĐỘI THẮNG**.
 
 ## 8. Đảo vị trí hình (Shuffle Board)
 - Nút **Đảo hình** nằm phía dưới khung ĐIỀU KHIỂN MC. Trước khi vòng bắt đầu, bạn có thể bấm nhiều lần.

@@ -139,3 +139,50 @@
 .fxflash{position:absolute;inset:0;box-shadow:inset 0 0 260px 80px rgba(255,40,60,.75)}
 .fxflash.to{box-shadow:inset 0 0 260px 80px rgba(255,160,20,.7)}
 .fxstamp.no{font-size:128px}
+
+/* ===== màn hình chào: chữ luôn vừa khung giữa các ảnh giày, nút giống nhau trên cả hai màn hình ===== */
+#welcome .center{top:150px}
+.w-title{max-width:none;padding:0 .08em;overflow:visible}
+.w-tag{font-size:40px;letter-spacing:.01em;text-shadow:0 4px 18px rgba(0,0,0,.45)}
+.w-btns{margin-top:58px;align-items:center}
+.w-btns .btn .ic{width:1em;height:1em}
+.w-btns .big{height:104px;min-width:380px;padding:0 64px;font-size:44px;font-style:italic;font-weight:900;letter-spacing:.03em;border-radius:26px;gap:18px;animation:wpulse 2.6s ease-in-out infinite}
+.w-btns .big .ic{width:38px;height:38px;fill:currentColor;stroke:none}
+.w-btns .mid{height:84px;min-width:190px;padding:0 34px;font-size:28px;border-radius:22px;background:rgba(7,22,62,.72);backdrop-filter:blur(6px);gap:12px}
+.w-btns .mid .ic{width:28px;height:28px}
+@keyframes wpulse{0%,100%{box-shadow:0 10px 30px rgba(30,123,255,.45),0 0 0 0 rgba(63,182,255,.45),inset 0 1px 0 rgba(255,255,255,.35)}50%{box-shadow:0 10px 30px rgba(30,123,255,.55),0 0 0 16px rgba(63,182,255,0),inset 0 1px 0 rgba(255,255,255,.35)}}
+.no-motion .w-btns .big{animation:none}
+.w-btns.mirror{pointer-events:none}
+.w-btns.mirror .btn{cursor:default}
+.w-shoe{animation:wfloat 6s ease-in-out infinite}
+.w-shoe.r,.w-shoe.l2{animation-delay:-3s}
+@keyframes wfloat{0%,100%{translate:0 0}50%{translate:0 -12px}}
+.no-motion .w-shoe{animation:none}
+
+/* ===== 3–4 đội ===== */
+.teambar.n3 .tcard,.teambar.n4 .tcard{padding:0 16px 0 26px;gap:10px;border-radius:18px}
+.teambar.n3 .tcard::before,.teambar.n4 .tcard::before{width:10px}
+.teambar.n3 .tcard .nm b{font-size:30px}
+.teambar.n4 .tcard .nm b{font-size:24px}
+.teambar.n3 .tcard .nm span,.teambar.n4 .tcard .nm span{font-size:12px;padding:3px 9px;letter-spacing:.1em}
+.teambar.n3 .tcard .sc{font-size:72px;min-width:56px}
+.teambar.n4 .tcard .sc{font-size:60px;min-width:44px}
+.teambar.n3 .tbox{width:250px}
+.teambar.n4 .tbox{width:220px}
+.teambar.n3 .tbox .v,.teambar.n4 .tbox .v{font-size:64px}
+.teambar.n4 .tbox .l{font-size:14px;letter-spacing:.1em}
+.teambar.n3 .tcard .adj button,.teambar.n4 .tcard .adj button{width:34px;height:30px;font-size:20px}
+.tcard.out{opacity:.28;filter:grayscale(.8)}
+.msgp .res .sline{display:flex;justify-content:space-between;gap:16px;font-size:34px;padding:2px 0}
+.msgp .res .sline .tn{color:var(--tc)}
+.msgp .res .sline b{color:#fff}
+.est .cols.n3 .c,.est .cols.n4 .c{padding:16px 12px;min-height:200px}
+.est .cols.n3 .c .n{font-size:54px}
+.est .cols.n4 .c .n{font-size:44px}
+.est .cols.n4{gap:14px}
+.est .cols.n4 .c .t,.est .cols.n4 .c .d{font-size:19px}
+.r-scores.n3 .r-sc{width:420px}
+.r-scores.n4{gap:24px}
+.r-scores.n4 .r-sc{width:400px;padding:16px 20px}
+.r-scores.n4 .r-sc .n{font-size:28px}
+.r-scores.n4 .r-sc .s{font-size:60px}

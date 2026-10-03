@@ -153,6 +153,9 @@
   const G = () => priv.game, ST = () => priv.settings;
   const teamName = i => (ST().teams[i] || {}).name || ('ĐỘI ' + (i + 1));
   const teamColor = i => (ST().teams[i] || {}).color || '#fff';
+  const TEAM_DEF = ['#3fb6ff', '#ff5d73', '#ffc83d', '#3ddc84'];
+  const tieTeams = t => (t && Array.isArray(t.teams) ? t.teams : [0, 1]);
+  const estTeams = E => (E && Array.isArray(E.teams) ? E.teams : [0, 1]);
   const tn = i => '<b style="color:' + esc(teamColor(i)) + '">' + esc(teamName(i)) + '</b>';
   const btn = (a, label, cls, opt) => { opt = opt || {}; let x = ''; Object.keys(opt.data || {}).forEach(k => { x += ' data-' + k + '="' + esc(opt.data[k]) + '"'; }); return '<button class="btn ' + (cls || 'btn-ghost') + '" data-act="' + a + '"' + x + (opt.dis ? ' disabled' : '') + (opt.title ? ' title="' + esc(opt.title) + '"' : '') + '>' + label + '</button>'; };
   const row = (cls, inner) => '<div class="row' + (cls ? ' ' + cls : '') + '">' + inner + '</div>';
@@ -170,11 +173,12 @@
   }
   function renderWelcome() {
     const g = G(), on = matchActive();
-    $('#btnStart').textContent = on ? tt('TIẾP TỤC', 'CONTINUE') : tt('BẮT ĐẦU', 'START');
-    $('#btnPractice').textContent = tt('Chơi thử', 'Practice');
-    $('#btnSettings').textContent = tt('Cài đặt', 'Settings');
+    put($('#btnStart'), TM.IC.play + '<span>' + esc(on ? tt('TIẾP TỤC', 'CONTINUE') : tt('BẮT ĐẦU', 'START')) + '</span>');
+    put($('#btnPractice'), TM.IC.pad + '<span>' + esc(tt('Chơi thử', 'Practice')) + '</span>');
+    put($('#btnSettings'), TM.IC.gear + '<span>' + esc(tt('Cài đặt', 'Settings')) + '</span>');
     const rn = { main: tt('Vòng chính', 'Main round'), tie: tt('Vòng phụ', 'Tie-breaker'), estimate: tt('Câu ước lượng', 'Estimation') }[g.stage] || '';
-    put($('#wNote'), on ? '<span>' + esc(fmt(tt('Trận đang diễn ra: {r} · {a} – {b}', 'Match in progress: {r} · {a} – {b}'), { r: rn, a: teamName(0) + ' ' + g.m.scores[0], b: g.m.scores[1] + ' ' + teamName(1) })) + '</span>' + btn('newMatchDlg', tt('Trận mới', 'New match')) : '');
+    const sc = g.m.scores.length === 2 ? teamName(0) + ' ' + g.m.scores[0] + ' – ' + g.m.scores[1] + ' ' + teamName(1) : g.m.scores.map((v, k) => teamName(k) + ' ' + v).join(' · ');
+    put($('#wNote'), on ? '<span>' + esc(fmt(tt('Trận đang diễn ra: {r} · {s}', 'Match in progress: {r} · {s}'), { r: rn, s: sc })) + '</span>' + btn('newMatchDlg', tt('Trận mới', 'New match')) : '');
   }
   function renderHostTools() {
     if (!priv) return;
@@ -214,15 +218,15 @@
     }
     if (g.stage === 'tie') {
       const t = g.t;
-      if (!t.started) return tt('Hai đội hòa điểm. Bấm BẮT ĐẦU VÒNG PHỤ.', 'The teams are tied. Press START TIE-BREAKER.');
+      if (!t.started) return fmt(tt('{t} hòa điểm. Bấm BẮT ĐẦU VÒNG PHỤ.', '{t} are tied. Press START TIE-BREAKER.'), { t: tieTeams(t).map(teamName).join(', ') });
       if (t.phase === 'flip') return fmt(tt('{t} lật 2 ô: đã lật {n}/2.', '{t} flips 2 tiles: {n}/2.'), { t: teamName(t.answering), n: t.picks.length });
       if (t.phase !== 'question') return tt('Đang xử lý…', 'Processing…');
       if (!t.q) return tt('Chọn câu hỏi vòng phụ.', 'Pick a tie-breaker question.');
       if (!t.qOpen) return tt('Bấm CÔNG BỐ CÂU HỎI, rồi chọn đội giành quyền trả lời.', 'Press SHOW QUESTION, then select the team that buzzes in.');
-      if (t.answering == null) return tt('Chọn đội giành quyền trả lời trước.', 'Select the team that buzzed in first.');
+      if (t.answering == null) return t.wrongTeam != null ? tt('Chọn đội giành quyền trả lời tiếp theo.', 'Select the team that buzzes in next.') : tt('Chọn đội giành quyền trả lời trước.', 'Select the team that buzzed in first.');
       return fmt(tt('{t} đang trả lời. Chấm ĐÚNG hoặc SAI.', '{t} is answering. Mark CORRECT or INCORRECT.'), { t: teamName(t.answering) });
     }
-    if (g.stage === 'estimate') return tt('Công bố câu ước lượng, nhập đáp án hai đội rồi bấm SO SÁNH.', 'Show the estimation question, enter both answers, then press COMPARE.');
+    if (g.stage === 'estimate') return tt('Công bố câu ước lượng, nhập đáp án của từng đội rồi bấm SO SÁNH.', 'Show the estimation question, enter each team’s answer, then press COMPARE.');
     return '';
   }
   function warnLine() {
@@ -272,7 +276,7 @@
   function mainPanel(g) {
     const m = g.m, S = ST();
     if (!m.started) {
-      return '<div><div class="flabel">' + tt('Đội đi trước', 'Team going first') + '</div><div class="seg">' + [0, 1].map(i => '<button data-act="first" data-v="' + i + '" style="--tc:' + esc(teamColor(i)) + '" class="' + (m.first === i ? 'on' : '') + '">' + esc(teamName(i)) + '</button>').join('') + '</div></div>' +
+      return '<div><div class="flabel">' + tt('Đội đi trước', 'Team going first') + '</div><div class="seg">' + m.scores.map((_, i) => '<button data-act="first" data-v="' + i + '" style="--tc:' + esc(teamColor(i)) + '" class="' + (m.first === i ? 'on' : '') + '">' + esc(teamName(i)) + '</button>').join('') + '</div></div>' +
         row('xl', btn('startMain', tt('BẮT ĐẦU VÒNG CHÍNH', 'START MAIN ROUND'), 'btn-primary cta')) +
         '<div class="small">' + fmt(tt('Vòng chính {m} phút · trả lời {a} giây · lật ô {f} giây · ghi nhớ {h} giây. Đổi trong Cài đặt.', 'Main round {m} min · answer {a}s · flip {f}s · memorize {h}s. Change in Settings.'), { m: S.times.main, a: S.times.answer, f: S.times.flip, h: S.times.hold }) + '<br>' +
         fmt(tt('Bộ câu hỏi: {m} câu chính, {b} dự phòng, {t} câu phụ, {e} ước lượng.', 'Questions: {m} main, {b} backup, {t} tie, {e} estimation.'), { m: g.qs.m.length, b: g.qs.b.length, t: g.qs.t.length, e: g.qs.e.length }) + '</div>' +
@@ -305,7 +309,7 @@
   }
   function tiePanel(g) {
     const t = g.t;
-    if (!t.started) return '<div class="note-box">' + fmt(tt('Hai đội hòa {a}–{b}. Vòng phụ: bảng 4 ô có đúng 1 cặp. Đội bấm chuông trước được trả lời; đúng thì được lật 2 ô, lật trúng cặp là thắng.', 'Tied at {a}–{b}. Tie-breaker: 4 tiles, exactly one pair. The first team to buzz answers; a correct answer earns 2 flips; finding the pair wins.'), { a: g.m.scores[0], b: g.m.scores[1] }) + '</div>' + row('xl', btn('startTie', tt('BẮT ĐẦU VÒNG PHỤ', 'START TIE-BREAKER'), 'btn-primary cta'));
+    if (!t.started) return '<div class="note-box">' + fmt(tt('{a} hòa {b} điểm. Vòng phụ: bảng 4 ô có đúng 1 cặp. Đội bấm chuông trước được trả lời; đúng thì được lật 2 ô, lật trúng cặp là thắng.', '{a} are tied on {b}. Tie-breaker: 4 tiles, exactly one pair. The first team to buzz answers; a correct answer earns 2 flips; finding the pair wins.'), { a: tieTeams(t).map(i => tn(i)).join(', '), b: g.m.scores[tieTeams(t)[0]] }) + '</div>' + row('xl', btn('startTie', tt('BẮT ĐẦU VÒNG PHỤ', 'START TIE-BREAKER'), 'btn-primary cta'));
     let h = '';
     if (t.phase === 'question') {
       const pickable = !t.qOpen, lock = t.wrongTeam != null;
@@ -313,11 +317,13 @@
       h += '<div class="qg" style="grid-template-columns:repeat(6,1fr)">' + g.qs.t.map((o, i) => qbtn({ s: 't', i }, 'P' + (i + 1), t.used[i], pickable, t.q, '', o)).join('') + '</div>';
       h += preview(t.q, t.qOpen, t.ansOpen);
       h += row('xl', btn('open', t.qOpen ? tt('ĐÃ CÔNG BỐ CÂU HỎI', 'QUESTION SHOWN') : tt('▶ CÔNG BỐ CÂU HỎI', '▶ SHOW QUESTION'), 'btn-primary' + (t.q && !t.qOpen ? ' cta' : ''), { dis: !t.q || t.qOpen }));
-      h += '<div><div class="flabel">' + tt('Đội giành quyền trả lời', 'Team that buzzed in') + '</div><div class="seg">' + [0, 1].map(i => '<button data-act="claim" data-team="' + i + '" style="--tc:' + esc(teamColor(i)) + '" class="' + (t.answering === i ? 'on' : '') + '"' + (!t.qOpen || t.answering != null || t.tried.includes(i) ? ' disabled' : '') + '>' + esc(teamName(i)) + (t.tried.includes(i) ? ' ✕' : '') + '</button>').join('') + '</div></div>';
-      if (lock) h += '<div class="note-box">' + fmt(tt('{a} trả lời sai. {b} được trả lời cùng câu; đáp án vẫn giữ kín.', '{a} was wrong. {b} may answer the same question; the answer stays hidden.'), { a: tn(t.wrongTeam), b: tn(t.answering) }) + '</div>';
+      h += '<div><div class="flabel">' + tt('Đội giành quyền trả lời', 'Team that buzzed in') + '</div><div class="seg">' + tieTeams(t).map(i => '<button data-act="claim" data-team="' + i + '" style="--tc:' + esc(teamColor(i)) + '" class="' + (t.answering === i ? 'on' : '') + '"' + (!t.qOpen || t.answering != null || t.tried.includes(i) ? ' disabled' : '') + '>' + esc(teamName(i)) + (t.tried.includes(i) ? ' ✕' : '') + '</button>').join('') + '</div></div>';
+      const left = tieTeams(t).filter(i => !t.tried.includes(i) && i !== t.answering);
+      if (lock && t.answering != null) h += '<div class="note-box">' + fmt(tt('{a} trả lời sai. {b} được trả lời cùng câu; đáp án vẫn giữ kín.', '{a} was wrong. {b} may answer the same question; the answer stays hidden.'), { a: tn(t.wrongTeam), b: tn(t.answering) }) + '</div>';
+      else if (lock) h += '<div class="note-box">' + fmt(tt('{a} trả lời sai. Chọn đội giành quyền tiếp theo ({b}); đáp án vẫn giữ kín.', '{a} was wrong. Select the next team to buzz in ({b}); the answer stays hidden.'), { a: tn(t.wrongTeam), b: left.map(i => tn(i)).join(', ') }) + '</div>';
       h += timerRow(t.answering != null, true);
-      h += judgeRow(t.answering != null, !t.qOpen || t.ansOpen || lock, lock ? tt('Đội còn lại vẫn đang có quyền trả lời', 'The other team still has the right to answer') : '');
-      if (lock) h += '<button class="lnk" data-act="reveal">' + tt('Bỏ qua quyền trả lời của đội còn lại và công bố đáp án…', 'Skip the other team’s right and reveal the answer…') + '</button>';
+      h += judgeRow(t.answering != null, !t.qOpen || t.ansOpen || lock, lock ? tt('Các đội còn lại vẫn đang có quyền trả lời', 'The remaining teams still have the right to answer') : '');
+      if (lock) h += '<button class="lnk" data-act="reveal">' + tt('Bỏ qua quyền trả lời của các đội còn lại và công bố đáp án…', 'Skip the remaining teams’ right and reveal the answer…') + '</button>';
     } else if (t.phase === 'flip') h += flipBlock(t, t.answering);
     else h += '<div class="ok-box">' + (t.phase === 'ended' && g.r ? fmt(tt('{t} thắng vòng phụ!', '{t} wins the tie-breaker!'), { t: tn(g.r.winner) }) : tt('Đang xử lý…', 'Processing…')) + '</div>';
     const tc = g.clocks.tie;
@@ -333,7 +339,7 @@
     const qq = TM.lang === 'en' ? (E.q.en || E.q.vi) : (E.q.vi || E.q.en);
     h += '<div class="qprev"><div class="k">' + tt('CÂU ƯỚC LƯỢNG', 'ESTIMATION') + '<i class="' + (E.shown ? 'on' : '') + '">' + (E.shown ? tt('ĐANG HIỆN', 'ON SCREEN') : tt('CHƯA HIỆN', 'HIDDEN')) + '</i></div><div class="q">' + esc(qq || tt('(chưa có nội dung)', '(empty)')) + '</div><div class="a">' + tt('Đáp án chuẩn: ', 'Correct answer: ') + esc(E.correct || '—') + ' ' + esc(E.unit || '') + '<small>' + tt('chỉ MC thấy', 'host only') + '</small></div></div>';
     h += row('l', btn('estShow', E.shown ? tt('ĐÃ CÔNG BỐ CÂU HỎI', 'QUESTION SHOWN') : tt('▶ CÔNG BỐ CÂU HỎI', '▶ SHOW QUESTION'), 'btn-primary' + (E.shown ? '' : ' cta'), { dis: E.shown || !qq }));
-    h += [0, 1].map(i => '<div><div class="flabel" style="color:' + esc(teamColor(i)) + '">' + fmt(tt('Đáp án {t}', '{t} answer'), { t: esc(teamName(i)) }) + '</div><input class="mini-in" id="estA' + i + '" inputmode="decimal" value="' + esc(E.a[i]) + '"></div>').join('');
+    h += estTeams(E).map((i, k) => '<div><div class="flabel" style="color:' + esc(teamColor(i)) + '">' + fmt(tt('Đáp án {t}', '{t} answer'), { t: esc(teamName(i)) }) + '</div><input class="mini-in js-estA" id="estA' + k + '" inputmode="decimal" value="' + esc(E.a[k] || '') + '"></div>').join('');
     h += row('l', btn('estCompare', tt('SO SÁNH', 'COMPARE'), 'btn-gold' + (E.shown && !E.result ? ' cta' : '')));
     if (E.result && E.result.winner == null) h += '<div class="note-box">' + tt('Sai lệch bằng nhau: dùng câu ước lượng mới.', 'Equal difference: use a new question.') + '</div>' + row('l', btn('estNew', tt('Câu ước lượng mới', 'New estimation question'), 'btn-gold cta'));
     if (E.result && E.result.winner != null) h += row('xl', btn('announce', tt('🏆 CÔNG BỐ ĐỘI THẮNG', '🏆 ANNOUNCE WINNER'), 'btn-gold cta'));
@@ -380,7 +386,7 @@
       case 'adjustToggle': adjusting = !adjusting; return render();
       case 'estPick': return act('estPick', { pi: +d.pi });
       case 'estCustomDlg': return estCustomDlg();
-      case 'estCompare': { const r = await act('estSet', { a0: $('#estA0').value, a1: $('#estA1').value }); if (r) act('estCompare'); return; }
+      case 'estCompare': { const r = await act('estSet', { a: $$('#panel .js-estA').map(e => e.value) }); if (r) act('estCompare'); return; }
       case 'addExtraDlg': return addExtraDlg();
       case 'shuffle': {
         const started = !g.prac && ((g.stage === 'main' && g.m.started) || (g.stage === 'tie' && g.t && g.t.started));
@@ -392,7 +398,7 @@
       }
       case 'reveal': {
         if (g.stage === 'tie') {
-          if (!await confirmBox(tt('Công bố đáp án sớm?', 'Reveal the answer early?'), tt('Công bố đáp án sẽ KẾT THÚC quyền trả lời câu hỏi này của CẢ HAI đội. Tiếp tục?', 'Revealing the answer ENDS the right to answer this question for BOTH teams. Continue?'), tt('Công bố đáp án', 'Reveal answer'), true)) return;
+          if (!await confirmBox(tt('Công bố đáp án sớm?', 'Reveal the answer early?'), tt('Công bố đáp án sẽ KẾT THÚC quyền trả lời câu hỏi này của TẤT CẢ các đội. Tiếp tục?', 'Revealing the answer ENDS the right to answer this question for EVERY team. Continue?'), tt('Công bố đáp án', 'Reveal answer'), true)) return;
           return act('reveal', { confirm: true });
         }
         return act('reveal');
@@ -414,11 +420,30 @@
     let body = '';
     if (running) body += '<div class="warnbox">' + tt('Trận đang chơi sẽ được thay bằng trận mới (điểm và tiến độ hiện tại bị xóa).', 'The current match will be replaced (scores and progress are cleared).') + '</div>';
     if (pf && pf.warnings.length) body += '<div class="warnbox"><b>' + tt('Cần kiểm tra trước khi bắt đầu:', 'Check before starting:') + '</b><ul>' + pf.warnings.map(w => '<li>' + esc(TM.lang === 'en' ? w[1] : w[0]) + '</li>').join('') + '</ul></div>';
-    body += '<div class="row g2"><label class="fld"><span>' + tt('Tên đội 1', 'Team 1 name') + '</span><input class="inp" id="nmT0" maxlength="24" value="' + esc(S.teams[0].name) + '"></label><label class="fld"><span>' + tt('Tên đội 2', 'Team 2 name') + '</span><input class="inp" id="nmT1" maxlength="24" value="' + esc(S.teams[1].name) + '"></label></div>';
-    body += '<div class="fld"><span>' + tt('Đội đi trước', 'First team') + '</span><select class="inp" id="nmFirst"><option value="0">' + tt('Đội 1', 'Team 1') + '</option><option value="1">' + tt('Đội 2', 'Team 2') + '</option></select></div>';
+    // số đội lấy từ Cài đặt (2–4 đội); có thể thêm/bớt ngay trong hộp này
+    body += '<div class="fld"><span>' + tt('Các đội chơi', 'Teams') + '</span><div id="nmTeams" class="nm-teams"></div></div>';
+    body += '<div class="fld"><span>' + tt('Đội đi trước', 'First team') + '</span><select class="inp" id="nmFirst"></select></div>';
     if (pf) body += '<p class="note">' + fmt(tt('Bộ câu hỏi: {m} câu chính, {b} dự phòng, {t} câu phụ, {e} ước lượng (các câu đang Bật). Vị trí hình được đảo tự động.', 'Questions: {m} main, {b} backup, {t} tie, {e} estimation (enabled ones). Tile images are shuffled automatically.'), pf.counts) + '</p>';
-    let vals = null;
-    const ok = await dialog(tt('Trận mới', 'New match'), body, [{ label: tt('Hủy', 'Cancel'), value: false }, { label: tt('Vào trận', 'Enter match'), cls: 'btn-primary', value: true, check: () => { vals = { teams: [$('#nmT0').value.trim() || 'ĐỘI 1', $('#nmT1').value.trim() || 'ĐỘI 2'], first: +$('#nmFirst').value }; return true; } }]);
+    let vals = null, names = S.teams.map(t => t.name);
+    const readNames = () => { names = $$('#nmTeams input').map((e, i) => e.value.trim() || ('ĐỘI ' + (i + 1))); };
+    const drawTeams = () => {
+      const box = $('#nmTeams'); if (!box) return;
+      const first = $('#nmFirst').value | 0;
+      box.innerHTML = names.map((n, i) => '<div class="nm-row"><i style="background:' + esc((S.teams[i] || {}).color || TEAM_DEF[i]) + '"></i><input class="inp" maxlength="24" value="' + esc(n) + '">' + (names.length > 2 ? '<button type="button" class="btn btn-ghost sm" data-nmdel="' + i + '" title="' + esc(tt('Bớt đội', 'Remove team')) + '">✕</button>' : '') + '</div>').join('') +
+        (names.length < 4 ? '<button type="button" class="btn btn-ghost sm" id="nmAdd">+ ' + tt('Thêm đội', 'Add team') + '</button>' : '');
+      $('#nmFirst').innerHTML = names.map((n, i) => '<option value="' + i + '"' + (i === Math.min(first, names.length - 1) ? ' selected' : '') + '>' + esc(n) + '</option>').join('');
+    };
+    setTimeout(() => {
+      drawTeams();
+      const box = $('#nmTeams'); if (!box) return;
+      box.addEventListener('click', e => {
+        const del = e.target.closest('[data-nmdel]');
+        if (del) { readNames(); names.splice(+del.dataset.nmdel, 1); drawTeams(); }
+        else if (e.target.closest('#nmAdd')) { readNames(); names.push('ĐỘI ' + (names.length + 1)); drawTeams(); }
+      });
+      box.addEventListener('input', () => { readNames(); const f = $('#nmFirst').value; $('#nmFirst').innerHTML = names.map((n, i) => '<option value="' + i + '"' + (String(i) === f ? ' selected' : '') + '>' + esc(n) + '</option>').join(''); });
+    }, 0);
+    const ok = await dialog(tt('Trận mới', 'New match'), body, [{ label: tt('Hủy', 'Cancel'), value: false }, { label: tt('Vào trận', 'Enter match'), cls: 'btn-primary', value: true, check: () => { readNames(); vals = { teams: names, first: +$('#nmFirst').value }; return true; } }]);
     if (ok && vals) await act('newMatch', vals);
   }
   async function estCustomDlg() {
@@ -512,7 +537,12 @@
     const slotSel = (arr, idx) => '<select class="inp" data-slot="' + arr + ':' + idx + '">' + Array.from({ length: 15 }, (_, i) => '<option value="' + i + '"' + (D[arr][idx] === i ? ' selected' : '') + '>' + tt('Hình ', 'Image ') + (i + 1) + '</option>').join('') + '</select>';
     let h = '<div class="sec">' + tt('Chương trình', 'Program') + '</div><div class="sgrid">' + f('pname', tt('Tên chương trình', 'Program name'), ' maxlength="40"') + f('taglineVi', tt('Khẩu hiệu (Tiếng Việt)', 'Tagline (Vietnamese)'), ' maxlength="70"') + f('taglineEn', tt('Khẩu hiệu (English)', 'Tagline (English)'), ' maxlength="70"') +
       '<label><span>' + tt('Ngôn ngữ hiển thị', 'Display language') + '</span><select class="inp" data-k="lang"><option value="vi"' + (D.lang === 'vi' ? ' selected' : '') + '>Tiếng Việt</option><option value="en"' + (D.lang === 'en' ? ' selected' : '') + '>English</option></select></label></div>';
-    h += '<div class="sec">' + tt('Đội chơi', 'Teams') + '</div><div class="sgrid">' + [0, 1].map(i => '<label><span>' + tt('Tên đội ', 'Team ') + (i + 1) + '</span><input class="inp" data-team="' + i + '" maxlength="24" value="' + esc(D.teams[i].name) + '"></label><label><span>' + tt('Màu đội ', 'Team color ') + (i + 1) + '</span><input class="inp" type="color" data-tcolor="' + i + '" value="' + esc(D.teams[i].color) + '"></label>').join('') + '</div>';
+    // Đội chơi: 2–4 đội, mỗi đội có tên và màu; số đội mới áp dụng từ trận kế tiếp
+    const live = G().created && G().stage !== 'result' && G().m.scores.length !== D.teams.length;
+    h += '<div class="sec">' + tt('Đội chơi', 'Teams') + '<span class="muted" style="margin-left:10px;font-weight:600">' + fmt(tt('{n} đội (tối thiểu 2, tối đa 4)', '{n} teams (2 to 4)'), { n: D.teams.length }) + '</span></div>';
+    h += '<div class="team-list">' + D.teams.map((t, i) => '<div class="team-row"><span class="tno" style="background:' + esc(t.color) + '">' + (i + 1) + '</span><input class="inp" data-team="' + i + '" maxlength="24" value="' + esc(t.name) + '" placeholder="' + esc(tt('Tên đội', 'Team name')) + '"><label class="tcol" title="' + esc(tt('Đổi màu đội', 'Change team color')) + '"><input type="color" data-tcolor="' + i + '" value="' + esc(t.color) + '"></label>' + (D.teams.length > 2 ? '<button class="btn btn-ghost sm" data-tdel="' + i + '">' + tt('Xóa', 'Remove') + '</button>' : '') + '</div>').join('') + '</div>';
+    if (D.teams.length < 4) h += '<button class="btn btn-ghost" data-tadd="1">+ ' + tt('Thêm đội', 'Add team') + '</button>';
+    if (live) h += '<p class="note">' + tt('Trận đang chơi giữ nguyên số đội cũ. Số đội mới áp dụng khi bấm “Trận mới”.', 'The current match keeps its team count. The new count applies when you start a new match.') + '</p>';
     h += '<div class="sec">' + tt('Thời gian', 'Timing') + '</div><div class="sgrid">' + num('main', tt('Vòng chính (phút)', 'Main round (minutes)'), 1, 90) + num('answer', tt('Trả lời (giây)', 'Answer (seconds)'), 5, 300) + num('flip', tt('Lật ô (giây)', 'Flip (seconds)'), 5, 120) + num('hold', tt('Giữ hai ô sai để ghi nhớ (giây)', 'Hold mismatched tiles (seconds)'), 1, 30) + num('tie', tt('Vòng phụ (phút)', 'Tie-breaker (minutes)'), 0.5, 15, 0.5) + '</div><p class="note">' + tt('Thời gian mới áp dụng cho đồng hồ chưa chạy.', 'New times apply to clocks that are not running.') + '</p>';
     h += '<div class="sec">' + tt('Logo & ảnh nền', 'Logo & backgrounds') + '</div><div class="sgrid">';
     h += '<label><span>' + tt('Logo', 'Logo') + '</span><select class="inp" data-k="logoMode"><option value="default"' + (D.logoMode === 'default' ? ' selected' : '') + '>' + tt('Logo SKECHERS mặc định', 'Default SKECHERS logo') + '</option><option value="custom"' + (D.logoMode === 'custom' ? ' selected' : '') + '>' + tt('Logo tải lên', 'Uploaded logo') + '</option><option value="text"' + (D.logoMode === 'text' ? ' selected' : '') + '>' + tt('Chữ SKECHERS', 'SKECHERS text') + '</option></select><div class="row">' + (D.logoUrl ? '<img src="' + esc(D.logoUrl) + '" style="height:32px;background:#fff;border-radius:6px;padding:3px">' : '') + '<button class="btn btn-ghost sm" data-up="logoUrl" data-kind="image">' + tt('Tải logo', 'Upload logo') + '</button></div></label>';
@@ -544,7 +574,7 @@
     if (t.dataset.k) D[t.dataset.k] = t.value;
     else if (t.dataset.t2) D.times[t.dataset.t2] = Number(t.value);
     else if (t.dataset.team) D.teams[+t.dataset.team].name = t.value;
-    else if (t.dataset.tcolor) D.teams[+t.dataset.tcolor].color = t.value;
+    else if (t.dataset.tcolor) { D.teams[+t.dataset.tcolor].color = t.value; const sw = t.closest('.team-row') && t.closest('.team-row').querySelector('.tno'); if (sw) sw.style.background = t.value; }
     else if (t.dataset.b) D[t.dataset.b] = t.checked;
     else if (t.dataset.r) D[t.dataset.r] = Number(t.value);
     else if (t.dataset.slot) { const [arr, i] = t.dataset.slot.split(':'); D[arr][+i] = +t.value; }
@@ -555,6 +585,8 @@
   $('#setForm').addEventListener('click', async e => {
     const t = e.target.closest('button'); if (!t || !draft) return;
     if (t.dataset.try) { const id = (draft.sounds || {})[t.dataset.try] || ($('[data-snd="' + t.dataset.try + '"]') || {}).value; tryPlayer.unlock(); tryPlayer.vol = draft.sfxVol == null ? 0.8 : draft.sfxVol; if (id && id !== 'off') setTimeout(() => tryPlayer.play(id), 60); return; }
+    if (t.dataset.tadd) { if (draft.teams.length < 4) { const i = draft.teams.length; draft.teams.push({ name: 'ĐỘI ' + (i + 1), color: TEAM_DEF[i] }); markDirty(); renderSet(); } return; }
+    if (t.dataset.tdel) { if (draft.teams.length > 2) { draft.teams.splice(+t.dataset.tdel, 1); markDirty(); renderSet(); } return; }
     if (t.id === 'setSave') { const ok = await saveSettings(draft); if (ok) { draft = null; setDirty = false; renderSet(); } return; }
     if (t.id === 'setReset') { draft = null; setDirty = false; renderSet(); return; }
     if (t.dataset.clear) { const k = t.dataset.clear; if (k.startsWith('shoe:')) draft.shoes[+k.slice(5)] = ''; else { draft[k] = ''; if (k === 'musicUrl') draft.musicName = ''; if (k === 'fanfareUrl') draft.fanfareName = ''; } markDirty(); renderSet(); return; }

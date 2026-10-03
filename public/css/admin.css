@@ -117,3 +117,14 @@ table.qt .act{white-space:nowrap;text-align:right}
 .his-item{border-top:1px solid var(--line);padding:10px 0}
 .his-item summary{cursor:pointer;font-weight:800}
 .his-item ol{margin:8px 0 0 22px;font-size:14px;color:#cfe6ff}
+
+/* danh sách đội (Cài đặt và hộp Trận mới) */
+.team-list{display:flex;flex-direction:column;gap:10px;margin:6px 0 12px;max-width:640px}
+.team-row,.nm-row{display:flex;align-items:center;gap:10px}
+.team-row .inp,.nm-row .inp{flex:1}
+.team-row .tno{flex:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;color:#04102e;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+.team-row .tcol{flex:none;width:44px;height:40px;border-radius:10px;overflow:hidden;border:1.5px solid rgba(160,210,255,.35);cursor:pointer}
+.team-row .tcol input{width:64px;height:56px;margin:-8px;border:0;padding:0;cursor:pointer;background:none}
+.nm-teams{display:flex;flex-direction:column;gap:8px}
+.nm-row i{flex:none;width:14px;height:34px;border-radius:5px}
+.nm-teams > .btn{align-self:flex-start}
