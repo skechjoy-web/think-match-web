@@ -8,87 +8,13 @@
 <meta name="theme-color" content="#061334">
 <link rel="icon" href="assets/icon-192.png">
 <link rel="stylesheet" href="css/tm.css">
-<link rel="stylesheet" href="css/player.css">
+<link rel="stylesheet" href="css/screen.css">
 </head>
 <body>
-<!-- Màn hình người chơi / trình chiếu: chỉ hiển thị, không có bảng điều khiển hay đáp án chưa công bố -->
-<div id="stage">
-  <section id="welcome" class="screen active">
-    <div class="bg-photo js-bg"></div><div class="bg-ov"></div>
-    <div class="stripes" style="left:-260px;top:-240px"></div><div class="stripes" style="right:-300px;bottom:-320px"></div>
-    <div class="speed"><i></i><i></i><i></i></div>
-    <div class="w-shoe l2"><img class="js-shoe" data-slot="0" alt=""></div>
-    <div class="w-shoe r2"><img class="js-shoe" data-slot="6" alt=""></div>
-    <div class="w-shoe l"><img class="js-shoe" data-slot="1" alt=""></div>
-    <div class="w-shoe r"><img class="js-shoe" data-slot="13" alt=""></div>
-    <div class="center">
-      <div class="w-logo brand-logo js-logo"></div>
-      <div class="w-title js-pname">THINK &amp; MATCH</div>
-      <div class="w-bar"></div>
-      <div class="w-tag js-tagline"></div>
-    </div>
-    <div class="welcome-note" id="wNote"></div>
-  </section>
-
-  <section id="game" class="screen">
-    <div class="bg-photo js-bg"></div><div class="bg-ov"></div>
-    <div class="speed"><i></i><i></i><i></i></div>
-    <header class="hdr">
-      <div class="h-brand"><div class="h-logo brand-logo js-logo"></div><div class="h-sep"></div><div class="h-title js-pname"></div></div>
-      <div class="h-clock idle" id="hClock"><div class="rb" id="hRound"></div><div class="ct tnum" id="hTime">--:--</div></div>
-      <div class="h-tools">
-        <button class="iconbtn js-pair" id="btnPair" style="display:none"></button>
-        <button class="iconbtn js-sound" id="btnSound"></button>
-        <button class="iconbtn js-fs"></button>
-      </div>
-    </header>
-    <div class="col" id="col">
-      <div class="teambar">
-        <div class="tcard" data-t="0"><div class="nm"><b></b><span></span></div><div class="sc tnum">0</div></div>
-        <div class="tbox idle" id="tbox"><div class="l"></div><div class="v tnum"></div><div class="s"></div><div class="bar"></div></div>
-        <div class="tcard" data-t="1"><div class="nm"><b></b><span></span></div><div class="sc tnum">0</div></div>
-      </div>
-      <div class="barea" id="barea">
-        <div class="board main" id="board"></div>
-        <div class="pairs" id="pairs"></div>
-        <div class="small-cap" id="smallCap"></div>
-        <div class="est" id="est" style="display:none"></div>
-      </div>
-    </div>
-    <aside class="msgp" id="msgp"></aside>
-    <div class="pauseov"><b id="pausedBig"></b><div class="sub" id="pausedSub"></div></div>
-  </section>
-
-  <section id="result" class="screen">
-    <div class="bg-photo js-reveal"></div><div class="bg-ov"></div>
-    <div class="rays"></div>
-    <div class="r-top"><div class="brand-logo js-logo"></div><div class="pn js-pname"></div></div>
-    <div class="r-cong" id="rCong"></div>
-    <div class="r-team" id="rTeam"></div>
-    <div class="r-tag" id="rTag"></div>
-    <div class="r-sc-cap" id="rCap"></div>
-    <div class="r-scores" id="rScores"></div>
-    <div class="r-msg" id="rMsg"></div>
-  </section>
-
-  <canvas id="fx" width="1920" height="1080"></canvas>
-  <div class="conn" id="conn"><i></i><span class="t" id="connT"></span></div>
-  <div class="audiohint" id="audioHint"></div>
-  <div class="toast" id="toast"></div>
-
-  <div class="modal-bg" id="pairM"><div class="modal">
-    <h2 id="pairTitle"></h2>
-    <p id="pairText"></p>
-    <div class="code tnum" id="pairCode"></div>
-    <div class="pad" id="pairPad"></div>
-    <div class="err" id="pairErr"></div>
-    <div class="r"><button class="btn btn-ghost" id="pairCancel"></button><button class="btn btn-danger" id="pairForget" style="display:none"></button><button class="btn btn-primary" id="pairGo"></button></div>
-  </div></div>
-
-  <audio id="bgm" preload="auto"></audio>
-  <audio id="fan" preload="auto"></audio>
-</div>
+<!-- Màn hình trình chiếu: cùng giao diện với trang MC, không có nút điều khiển và không nhận đáp án chưa công bố -->
+<div id="stage"></div>
 <script src="js/common.js"></script>
+<script src="js/screen.js"></script>
 <script src="js/player.js"></script>
 </body>
 </html>

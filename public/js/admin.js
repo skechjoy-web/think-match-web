@@ -8,7 +8,7 @@
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { /* bỏ qua */ } },
   };
-  let sess = null, role = null, user = null, pub = null, priv = null, privV = -1, sync = null, tab = 'ctl', syncStatus = 'off';
+  let sess = null, role = null, user = null, pub = null, priv = null, privV = -1, sync = null, syncStatus = 'off';
   let bank = null, canEdit = false, bankFilter = { grp: '', q: '' }, draft = null, setDirty = false;
   const inflight = new Set();
   try { sess = JSON.parse(ls.get(SKEY) || 'null'); } catch (e) { sess = null; }
@@ -21,7 +21,7 @@
     $$('.lang-mini button').forEach(b => b.classList.toggle('on', b.dataset.l === TM.lang));
   }
   let toastT = 0;
-  function toast(msg, kind, ms) { const el = $('#toast'); el.textContent = msg; el.className = 'atoast show ' + (kind || ''); clearTimeout(toastT); toastT = setTimeout(() => { el.className = 'atoast'; }, ms || 3200); }
+  function toast(msg, kind, ms) { const el = $('#atoast'); el.textContent = msg; el.className = 'atoast show ' + (kind || ''); clearTimeout(toastT); toastT = setTimeout(() => { el.className = 'atoast'; }, ms || 3200); }
   // Cập nhật HTML khi thay đổi; không ghi đè khi MC đang gõ trong ô nhập của khối đó.
   function put(el, html) {
     if (!el || el.dataset.h === html) return;
@@ -94,19 +94,25 @@
     TM.lang = b.dataset.l; ls.set('tm_admin_lang', TM.lang); applyStatic();
   }));
 
-  /* ---------- vào trang quản trị ---------- */
+  /* ---------- vào trang MC ---------- */
+  let scr = null, adjusting = false;
   async function enterApp() {
     const r = await api('/api/admin', { op: 'state' });
     role = r.role; user = r.user; saveSess(sess, role);
-    $('#loginV').hidden = true; $('#appV').hidden = false;
+    $('#loginV').hidden = true; $('#appV').hidden = false; document.documentElement.classList.add('inapp');
     $$('[data-admin]').forEach(e => { e.hidden = role !== 'admin'; });
     $('#tbRole').textContent = role === 'admin' ? 'ADMIN' : 'MC';
     $('#tbUser').textContent = user && user.email || '';
-    if (!sync) sync = new TM.Sync({ onState: p => { pub = p; if (p.v > privV) loadPriv(); render(); }, onStatus: s => { syncStatus = s; renderTop(); renderStatus(); } });
+    if (!sync) {
+      sync = new TM.Sync({ onState: (p, prev) => { pub = p; if (p.v > privV) loadPriv(); scr.update(p, prev); }, onStatus: s => { syncStatus = s; scr.setStatus(s); render(); } });
+      scr = new TM.Screen({
+        host: true, stage: $('#stage'), sync, soundKey: 'tm_host_sound', soundDefault: false,
+        onPick: i => act('pick', { i }), canPick: () => syncStatus !== 'off',
+        onRender: () => render(), onTools: () => renderHostTools(), onClock: () => tickPanel(),
+      });
+      setInterval(() => { if (!document.hidden) loadPriv(); }, 4000);
+    }
     setState(r);
-    setInterval(() => { if (!document.hidden) loadPriv(); }, 4000);
-    setInterval(tickClocks, 250);
-    addEventListener('resize', fitBoard);
   }
   let privBusy = false, privAgain = false;
   async function loadPriv() {
@@ -120,9 +126,9 @@
     if (r.pub && r.pub.v < privV) return;
     priv = r.priv; privV = r.pub.v;
     const lang = priv.settings.lang === 'en' ? 'en' : 'vi';
-    if (lang !== TM.lang) { TM.lang = lang; ls.set('tm_admin_lang', lang); applyStatic(); if (tab === 'bank') renderBank(); if (tab === 'his') renderHis(); if (tab === 'acc') renderAcc(); }
-    if (sync) sync.apply(r.pub, true); else pub = r.pub;
-    pub = sync ? sync.pub : r.pub;
+    if (lang !== TM.lang) { TM.lang = lang; ls.set('tm_admin_lang', lang); applyStatic(); if (spOpen) renderSp(); }
+    sync.apply(r.pub, true);
+    pub = sync.pub;
     render();
   }
   async function act(type, data, quiet) {
@@ -133,73 +139,78 @@
     catch (e) { if (!quiet) toast(e.message, 'err', 4500); return null; }
     finally { inflight.delete(key); }
   }
-
-  /* ---------- tab ---------- */
-  $('#tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; showTab(b.dataset.tab); });
-  function showTab(t) {
-    if (tab === 'set' && t !== 'set' && setDirty) toast(tt('Cài đặt chưa lưu vẫn được giữ trong tab Cài đặt.', 'Unsaved settings are kept in the Settings tab.'));
-    tab = t; $$('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t)); $$('.tab').forEach(s => s.classList.toggle('on', s.id === 'tab-' + t));
-    if (t === 'set') { if (!setDirty) draft = null; renderSet(); }
-    if (t === 'bank') loadBank();
-    if (t === 'acc') loadAcc();
-    if (t === 'his') loadHis();
-    if (t === 'ctl') { render(); fitBoard(); }
-  }
-  $('#btnLogout').addEventListener('click', async () => {
-    try { await TM.api('/api/auth', { op: 'logout' }, sess && sess.access_token); } catch (e) { /* vẫn đăng xuất trên máy này */ }
-    saveSess(null); location.replace(location.pathname);
-  });
-  $('#btnOpenPlayer').addEventListener('click', () => {
+  function openPlayer() {
     const w = window.open('/', 'tm_player', 'popup=yes,width=1280,height=720');
     if (!w) toast(tt('Trình duyệt chặn cửa sổ mới. Hãy cho phép cửa sổ bật lên, hoặc mở địa chỉ trang chủ trên máy chiếu.', 'The browser blocked the new window. Allow pop-ups, or open the home page on the projector.'), 'err', 6000);
     else try { w.focus(); } catch (e) { /* bỏ qua */ }
-  });
+  }
+  async function logout() {
+    try { await TM.api('/api/auth', { op: 'logout' }, sess && sess.access_token); } catch (e) { /* vẫn đăng xuất trên máy này */ }
+    saveSess(null); location.replace(location.pathname);
+  }
 
   /* ---------- trợ giúp hiển thị ---------- */
   const G = () => priv.game, ST = () => priv.settings;
   const teamName = i => (ST().teams[i] || {}).name || ('ĐỘI ' + (i + 1));
   const teamColor = i => (ST().teams[i] || {}).color || '#fff';
   const tn = i => '<b style="color:' + esc(teamColor(i)) + '">' + esc(teamName(i)) + '</b>';
-  const btn = (act, label, cls, opt) => { opt = opt || {}; let a = ''; Object.keys(opt.data || {}).forEach(k => { a += ' data-' + k + '="' + esc(opt.data[k]) + '"'; }); return '<button class="btn ' + (cls || 'btn-ghost') + '" data-act="' + act + '"' + a + (opt.dis ? ' disabled' : '') + (opt.title ? ' title="' + esc(opt.title) + '"' : '') + '>' + label + '</button>'; };
-  const clk = (name, cls) => '<span class="v tnum ' + (cls || '') + '" data-clk="' + name + '">--</span>';
+  const btn = (a, label, cls, opt) => { opt = opt || {}; let x = ''; Object.keys(opt.data || {}).forEach(k => { x += ' data-' + k + '="' + esc(opt.data[k]) + '"'; }); return '<button class="btn ' + (cls || 'btn-ghost') + '" data-act="' + a + '"' + x + (opt.dis ? ' disabled' : '') + (opt.title ? ' title="' + esc(opt.title) + '"' : '') + '>' + label + '</button>'; };
+  const row = (cls, inner) => '<div class="row' + (cls ? ' ' + cls : '') + '">' + inner + '</div>';
   function qObj(ref) { const g = G(); if (!ref) return null; const l = g.qs[ref.s]; return l ? l[ref.i] : null; }
   function qText(o) { if (!o) return ''; return TM.lang === 'en' ? (o.en || o.vi || '') : (o.vi || o.en || ''); }
   function aText(o) { if (!o) return ''; return TM.lang === 'en' ? (o.aen || o.avi || '') : (o.avi || o.aen || ''); }
-  function curCtx() { const g = G(); if (g.prac) return { st: g.prac, kind: 'prac' }; if (g.stage === 'main') return { st: g.m, kind: 'main' }; if (g.stage === 'tie' && g.t) return { st: g.t, kind: 'tie' }; return null; }
+  const matchActive = () => { const g = G(); return g.created && g.stage !== 'result'; };
 
-  /* ---------- render ---------- */
+  /* ---------- vẽ phần riêng của trang MC ---------- */
   function render() {
-    if (!priv || !pub) return;
-    renderTop();
-    if (tab !== 'ctl') return;
-    renderStatus(); renderMatch(); renderTeams(); renderClockCard(); renderFlow(); renderBoard(); renderPick(); tickClocks();
+    if (!priv || !pub || !scr) return;
+    renderWelcome(); renderHostTools(); renderPanel(); renderResultBtns();
+    $('#col').classList.toggle('adjusting', adjusting && G().created && !G().prac && G().stage === 'main');
+    if (spOpen) renderSpLive();
   }
-  function renderTop() {
+  function renderWelcome() {
+    const g = G(), on = matchActive();
+    $('#btnStart').textContent = on ? tt('TIẾP TỤC', 'CONTINUE') : tt('BẮT ĐẦU', 'START');
+    $('#btnPractice').textContent = tt('Chơi thử', 'Practice');
+    $('#btnSettings').textContent = tt('Cài đặt', 'Settings');
+    const rn = { main: tt('Vòng chính', 'Main round'), tie: tt('Vòng phụ', 'Tie-breaker'), estimate: tt('Câu ước lượng', 'Estimation') }[g.stage] || '';
+    put($('#wNote'), on ? '<span>' + esc(fmt(tt('Trận đang diễn ra: {r} · {a} – {b}', 'Match in progress: {r} · {a} – {b}'), { r: rn, a: teamName(0) + ' ' + g.m.scores[0], b: g.m.scores[1] + ' ' + teamName(1) })) + '</span>' + btn('newMatchDlg', tt('Trận mới', 'New match')) : '');
+  }
+  function renderHostTools() {
     if (!priv) return;
-    $('#tbName').textContent = ST().pname || 'THINK & MATCH';
-    const p = $('#connPill'); p.className = 'pill ' + syncStatus;
-    p.innerHTML = '<i></i>' + esc(syncStatus === 'off' ? tt('Mất kết nối', 'Offline') : syncStatus === 'live' ? tt('Đồng bộ trực tiếp', 'Live sync') : tt('Đồng bộ (dự phòng)', 'Sync (polling)'));
-    p.title = tt('Tình trạng đồng bộ với máy chủ', 'Sync status with the server');
+    const g = G(), mus = !!(g.music && g.music.playing);
+    $$('.js-lang button').forEach(b => b.classList.toggle('on', b.dataset.l === TM.lang));
+    $$('.js-music').forEach(b => { b.innerHTML = TM.IC.note; b.classList.toggle('lit', mus); b.classList.toggle('off', !ST().musicUrl); b.title = ST().musicUrl ? (mus ? tt('Tắt nhạc nền', 'Stop music') : tt('Bật nhạc nền', 'Play music')) : tt('Chưa có nhạc nền: tải trong Cài đặt', 'No music yet: upload in Settings'); });
+    $$('.js-open').forEach(b => { b.innerHTML = TM.IC.screen; b.title = tt('Mở màn hình trình chiếu', 'Open projection screen'); });
+    $$('.js-settings').forEach(b => { if (b.classList.contains('iconbtn')) b.innerHTML = TM.IC.gear; b.title = tt('Cài đặt', 'Settings'); });
+    const pb = $('#btnPause'); pb.innerHTML = g.paused ? TM.IC.play : TM.IC.pause; pb.classList.toggle('lit', !!g.paused); pb.title = g.paused ? tt('Tiếp tục', 'Resume') : tt('Tạm dừng', 'Pause'); pb.disabled = !g.created && !g.prac;
+    const hb = $('#btnHome'); hb.innerHTML = TM.IC.home; hb.title = tt('Về màn hình chào', 'Back to the welcome screen');
+    $('#btnResume').textContent = tt('▶ Tiếp tục', '▶ Resume');
   }
+  function renderResultBtns() {
+    $('#btnReplayFx').textContent = tt('Phát lại hiệu ứng', 'Replay effects');
+    $('#btnPlayAgain').textContent = tt('Chơi lại', 'Play again');
+    $('#btnResHome').textContent = tt('Về màn hình chào', 'Back to welcome');
+  }
+
+  /* ---------- bảng điều khiển MC (bên phải bảng ô) ---------- */
   function stageLabel() {
     const g = G();
     if (g.prac) return tt('CHƠI THỬ', 'PRACTICE');
-    if (!g.created) return tt('CHƯA CÓ TRẬN', 'NO MATCH');
-    return { main: tt('VÒNG CHÍNH', 'MAIN ROUND'), tie: tt('VÒNG PHỤ', 'TIE-BREAKER'), estimate: tt('CÂU ƯỚC LƯỢNG', 'ESTIMATION'), result: tt('KẾT QUẢ', 'RESULT') }[g.stage] || '';
+    return { main: tt('VÒNG CHÍNH', 'MAIN ROUND'), tie: tt('VÒNG PHỤ', 'TIE-BREAKER'), estimate: tt('ƯỚC LƯỢNG', 'ESTIMATION'), result: tt('KẾT QUẢ', 'RESULT') }[g.stage] || '';
   }
   function hint() {
     const g = G();
-    if (g.prac) { const p = g.prac; return p.phase === 'question' ? tt('Chơi thử: bấm Bắt đầu tính giờ, rồi chấm Đúng hoặc Sai.', 'Practice: start the timer, then mark Correct or Incorrect.') : p.phase === 'flip' ? fmt(tt('Lật 2 ô: đã lật {n}/2.', 'Flip 2 tiles: {n}/2.'), { n: p.picks.length }) : tt('Đang xử lý kết quả…', 'Processing…'); }
-    if (!g.created) return tt('Bấm “Trận mới” để nhập tên đội và bắt đầu.', 'Press “New match” to enter team names and start.');
+    if (g.prac) { const p = g.prac; return p.phase === 'question' ? tt('Chơi thử: bấm Bắt đầu tính giờ, rồi chấm Đúng hoặc Sai. Không tính điểm.', 'Practice: start the timer, then mark Correct or Incorrect. No points.') : p.phase === 'flip' ? fmt(tt('Bấm 2 ô trên bảng: đã lật {n}/2.', 'Click 2 tiles on the board: {n}/2.'), { n: p.picks.length }) : tt('Đang xử lý kết quả…', 'Processing…'); }
     if (g.stage === 'main') {
       const m = g.m;
-      if (!m.started) return tt('Chọn đội đi trước, rồi bấm BẮT ĐẦU VÒNG CHÍNH.', 'Choose the first team, then press START MAIN ROUND.');
-      if (m.phase === 'ended') return tt('Vòng chính đã kết thúc. Hệ thống đang xác định kết quả.', 'The main round is over. The result is being decided.');
-      if (m.phase === 'flip') return fmt(tt('{t} đang lật ô ({n}/2). Bấm số ô đội đọc trên bảng.', '{t} is flipping ({n}/2). Click the tile number the team calls.'), { t: teamName(m.turn), n: m.picks.length });
-      if (m.phase === 'resolve') return tt('Đang xử lý kết quả lật ô…', 'Processing the flip…');
-      if (!m.q) return fmt(tt('Lượt của {t}. Chọn một câu hỏi (màn hình người chơi hiện “Mời đội chuẩn bị”).', 'Turn: {t}. Pick a question (the player screen shows “Get ready”).'), { t: teamName(m.turn) });
-      if (!m.qOpen) return tt('Bấm BẮT ĐẦU TÍNH GIỜ để công bố câu hỏi và chạy đồng hồ.', 'Press START TIMER to show the question and start the clock.');
-      return tt('Chấm ĐÚNG hoặc SAI. “Xem đáp án” chỉ công bố đáp án, không chấm điểm.', 'Mark CORRECT or INCORRECT. “Show answer” only reveals the answer.');
+      if (!m.started) return tt('Chọn đội đi trước rồi bấm BẮT ĐẦU VÒNG CHÍNH.', 'Choose the first team, then press START MAIN ROUND.');
+      if (m.phase === 'ended') return tt('Vòng chính đã kết thúc. Đang chốt kết quả…', 'The main round is over. Finalizing…');
+      if (m.phase === 'flip') return fmt(tt('{t} đọc số ô, MC bấm ô trên bảng: đã lật {n}/2.', '{t} calls tile numbers, the host clicks them: {n}/2.'), { t: teamName(m.turn), n: m.picks.length });
+      if (m.phase === 'resolve') return tt('Đang xử lý kết quả…', 'Processing…');
+      if (!m.q) return fmt(tt('Lượt của {t}: chọn một câu hỏi.', "{t}'s turn: pick a question."), { t: teamName(m.turn) });
+      if (!m.qOpen) return tt('Bấm BẮT ĐẦU TÍNH GIỜ để hiện câu hỏi và chạy đồng hồ.', 'Press START TIMER to show the question and start the clock.');
+      return tt('Chấm ĐÚNG hoặc SAI. “Xem đáp án” chỉ hiện đáp án, không chấm điểm.', 'Mark CORRECT or INCORRECT. “Show answer” only reveals the answer.');
     }
     if (g.stage === 'tie') {
       const t = g.t;
@@ -212,224 +223,165 @@
       return fmt(tt('{t} đang trả lời. Chấm ĐÚNG hoặc SAI.', '{t} is answering. Mark CORRECT or INCORRECT.'), { t: teamName(t.answering) });
     }
     if (g.stage === 'estimate') return tt('Công bố câu ước lượng, nhập đáp án hai đội rồi bấm SO SÁNH.', 'Show the estimation question, enter both answers, then press COMPARE.');
-    return tt('Trận đã có kết quả. Có thể chơi lại hoặc về màn hình chào.', 'The match has a result. Play again or return to the welcome screen.');
+    return '';
   }
-  function renderStatus() {
-    if (!priv) return;
-    const g = G(), c = curCtx(); let now = '';
-    if (g.prac) now = tt('Không tính điểm', 'No points');
-    else if (g.stage === 'main' && g.m.started && g.m.phase !== 'ended') now = tt('Lượt: ', 'Turn: ') + tn(g.m.turn);
-    else if (g.stage === 'tie' && g.t && g.t.answering != null) now = tt('Đang trả lời: ', 'Answering: ') + tn(g.t.answering);
-    else if (g.stage === 'result' && g.r) now = tt('Đội thắng: ', 'Winner: ') + tn(g.r.winner);
-    let warn = '';
-    if (syncStatus === 'off') warn = tt('Mất kết nối máy chủ: thao tác sẽ được gửi khi có mạng trở lại.', 'Server connection lost.');
-    else if (g.paused) warn = tt('Trận đang TẠM DỪNG.', 'The match is PAUSED.');
-    else if (ST().pickMode === 'interactive' && !priv.device.paired) warn = tt('Chế độ tương tác: chưa ghép nối màn hình cảm ứng.', 'Interactive mode: no touch screen is paired.');
-    void c;
-    put($('#cStatus'), '<div class="stage">' + esc(stageLabel()) + (g.view === 'welcome' ? ' · ' + tt('đang hiện màn hình chào', 'welcome screen shown') : '') + '</div><div class="now">' + (now || '&nbsp;') + '</div><div class="hint">' + esc(hint()) + '</div>' + (warn ? '<div class="warnline">' + esc(warn) + '</div>' : ''));
+  function warnLine() {
+    const g = G();
+    if (syncStatus === 'off') return tt('Mất kết nối máy chủ. Kiểm tra mạng.', 'Server connection lost. Check the network.');
+    if (ST().pickMode === 'interactive' && !priv.device.paired && (g.created || g.prac)) return tt('Chế độ cảm ứng: chưa ghép nối màn hình. MC vẫn bấm ô được.', 'Touch mode: no screen paired. The host can still click tiles.');
+    return '';
   }
-  function renderMatch() {
-    const g = G(), m = g.m;
-    let h = '<div class="ch"><b>' + tt('Trận đấu', 'Match') + '</b></div><div class="row">';
-    h += btn('newMatchDlg', g.created ? tt('Trận mới / Chơi lại', 'New match / Play again') : tt('Trận mới', 'New match'), 'btn-primary');
-    h += g.prac ? btn('practiceEnd', tt('Kết thúc chơi thử', 'End practice'), 'btn-gold') : btn('practiceStart', tt('Chơi thử', 'Practice'));
-    h += g.paused ? btn('resume', tt('▶ Tiếp tục', '▶ Resume'), 'btn-ok') : btn('pause', tt('⏸ Tạm dừng', '⏸ Pause'), 'btn-ghost', { dis: !g.created && !g.prac });
-    h += '</div><div class="row">';
-    h += btn('view', tt('Màn hình chào', 'Welcome screen'), g.view === 'welcome' ? 'btn-ghost on' : 'btn-ghost', { data: { v: 'welcome' } });
-    h += btn('view', tt('Vào trận', 'Show game'), g.view !== 'welcome' ? 'btn-ghost on' : 'btn-ghost', { data: { v: 'game' }, dis: !g.created && !g.prac });
-    const canShuffle = !!g.prac || (g.created && (g.stage === 'main' || g.stage === 'tie'));
-    h += btn('shuffle', tt('🔀 Đảo vị trí hình', '🔀 Shuffle Board'), 'btn-ghost', { dis: !canShuffle, title: tt('Đảo ngẫu nhiên vị trí hình phía sau các ô', 'Randomly reshuffle the images behind the tiles') });
-    const mus = !!(g.music && g.music.playing);
-    h += btn('music', (mus ? '♫ ' + tt('Tắt nhạc nền', 'Stop music') : '♫ ' + tt('Bật nhạc nền', 'Play music')), mus ? 'btn-ghost on' : 'btn-ghost', { dis: !ST().musicUrl, title: ST().musicUrl ? '' : tt('Chưa có nhạc nền: tải trong Cài đặt', 'No music yet: upload in Settings') });
-    h += '</div>';
-    if (g.stage === 'main' && m.started && !g.prac) h += '<p class="note">' + tt('Đảo hình khi vòng đã bắt đầu sẽ chơi lại vòng chính từ đầu (xóa điểm vòng chính).', 'Shuffling after the round started restarts the main round (scores reset).') + '</p>';
-    put($('#cMatch'), h);
+  function renderPanel() {
+    const el = $('#panel'); if (!el) return;
+    const g = G();
+    let h = '<div class="p-head"><b>' + tt('ĐIỀU KHIỂN MC', 'HOST CONTROLS') + '</b><span>' + esc(stageLabel()) + '</span></div><div class="hint">' + esc(hint()) + '</div>';
+    const w = warnLine(); if (w) h += '<div class="warn">' + esc(w) + '</div>';
+    if (g.prac) h += pracPanel(g);
+    else if (g.stage === 'main') h += mainPanel(g);
+    else if (g.stage === 'tie') h += tiePanel(g);
+    else if (g.stage === 'estimate') h += estPanel(g);
+    put(el, h);
+    tickPanel();
   }
-  function renderTeams() {
-    const g = G(), c = g.prac ? null : (g.stage === 'main' && g.m.started && g.m.phase !== 'ended' ? g.m.turn : g.stage === 'tie' && g.t ? g.t.answering : null);
-    const adj = g.created && !g.prac && g.stage === 'main';
-    let h = '<div class="ch"><b>' + tt('Điểm', 'Scores') + '</b></div><div class="teams">';
-    [0, 1].forEach(i => {
-      h += '<div class="tm' + (c === i ? ' cur' : '') + '" style="--tc:' + esc(teamColor(i)) + '"><div class="n">' + esc(teamName(i)) + '<span class="tg">' + (g.stage === 'tie' ? tt('TRẢ LỜI', 'ANSWERING') : tt('ĐANG CHƠI', 'PLAYING')) + '</span></div><div class="s tnum">' + (g.prac ? '–' : g.m.scores[i]) + '</div>';
-      if (adj) h += '<div class="adj"><button data-act="adjust" data-team="' + i + '" data-d="1" title="' + tt('Cộng 1 điểm (chỉnh tay)', 'Add 1 point (manual)') + '">+</button><button data-act="adjust" data-team="' + i + '" data-d="-1" title="' + tt('Trừ 1 điểm (chỉnh tay)', 'Remove 1 point (manual)') + '">−</button></div>';
-      h += '</div>';
-    });
-    h += '</div>';
-    if (g.created && !g.prac && g.stage === 'main') h += '<p class="note">' + fmt(tt('Đã tìm thấy {n}/8 cặp.', 'Pairs found: {n}/8.'), { n: g.m.matched.filter(Boolean).length / 2 }) + '</p>';
-    put($('#cTeams'), h);
-  }
-  function renderClockCard() {
-    const g = G(); let h = '<div class="ch"><b>' + tt('Đồng hồ', 'Clocks') + '</b></div>';
-    const C = g.prac ? Object.assign({}, g.clocks, g.prac.clocks) : g.clocks;
-    if (!g.prac && g.stage === 'main') h += '<div class="clk"><span class="l">' + tt('Vòng chính', 'Main round') + '</span>' + clk('main') + '<span class="b">' + btn('mainToggle', C.main.running ? tt('Dừng', 'Stop') : tt('Chạy', 'Run'), 'btn-ghost sm', { dis: !g.m.started || g.m.phase === 'ended' }) + btn('mainReset', tt('Đặt lại', 'Reset'), 'btn-ghost sm', { dis: g.m.phase === 'ended' }) + btn('endMain', tt('Kết thúc vòng', 'End round'), 'btn-danger sm', { dis: !g.m.started || g.m.phase === 'ended' || g.m.phase === 'resolve' }) + '</span></div>';
-    if (!g.prac && g.stage === 'tie') h += '<div class="clk"><span class="l">' + tt('Vòng phụ', 'Tie-breaker') + '</span>' + clk('tie') + '<span class="b">' + btn('tieToggle', C.tie.running ? tt('Dừng', 'Stop') : tt('Chạy', 'Run'), 'btn-ghost sm', { dis: !g.t.started }) + btn('tieReset', tt('Đặt lại', 'Reset'), 'btn-ghost sm') + '</span></div>';
-    h += '<div class="clk"><span class="l">' + tt('Trả lời', 'Answer') + '</span>' + clk('ans') + '</div>';
-    h += '<div class="clk"><span class="l">' + tt('Lật ô', 'Flip') + '</span>' + clk('flip') + '</div>';
-    h += '<div class="clk"><span class="l">' + tt('Ghi nhớ', 'Memorize') + '</span>' + clk('hold') + '</div>';
-    put($('#cClocks'), h);
-  }
-  function tickClocks() {
+  // đồng hồ trong bảng điều khiển (cập nhật liên tục, không vẽ lại cả bảng)
+  function tickPanel() {
     if (!pub || !sync) return;
-    const C = pub.clocks;
-    $$('[data-clk]').forEach(el => {
-      const n = el.dataset.clk, c = C[n]; if (!c) return;
-      const r = sync.remain(c), long = n === 'main' || n === 'tie';
-      el.textContent = long ? TM.fmtMS(r) : Math.ceil(r / 1000) + 's';
-      el.classList.toggle('run', c.running && !pub.paused); el.classList.toggle('warn', c.running && r <= (long ? 60000 : 5000));
-    });
+    $$('#panel [data-clk]').forEach(e => { const c = pub.clocks[e.dataset.clk]; if (c) e.textContent = TM.fmtMS(sync.remain(c)); });
   }
-
-  /* ---------- luồng câu hỏi ---------- */
+  function qbtn(ref, label, used, enabled, cur, cls, o) {
+    const sel = cur && cur.s === ref.s && cur.i === ref.i;
+    return '<button class="' + (used && !sel ? 'used ' : '') + (sel ? 'sel ' : '') + (cls || '') + '" data-act="select" data-s="' + ref.s + '" data-i="' + ref.i + '"' + (enabled && !used || sel ? '' : ' disabled') + ' title="' + esc(qText(o)) + '">' + label + '</button>';
+  }
   function preview(ref, qOpen, ansOpen) {
     const o = qObj(ref);
-    if (!o) return '<div class="prev"><div class="q2">' + tt('Chọn câu hỏi để xem nội dung và đáp án (chỉ MC thấy).', 'Pick a question to see its text and answer (host only).') + '</div></div>';
-    const other = TM.lang === 'en' ? o.vi : o.en;
-    return '<div class="prev"><div class="k">' + esc(TM.qLabel(ref)) + ' · ' + esc(o.id || '') + '<span class="live ' + (qOpen ? 'on' : 'off') + '">' + (qOpen ? tt('ĐANG HIỆN TRÊN MÀN HÌNH', 'ON SCREEN') : tt('CHƯA CÔNG BỐ', 'NOT SHOWN')) + '</span></div>' +
-      '<div class="q">' + esc(qText(o)) + '</div>' + (other && other !== qText(o) ? '<div class="q2">' + esc(other) + '</div>' : '') +
-      '<div class="a">' + tt('Đáp án: ', 'Answer: ') + esc(aText(o) || '—') + '<small>' + (ansOpen ? tt('đã công bố', 'revealed') : tt('chỉ MC thấy', 'host only')) + '</small></div></div>';
+    if (!o) return '<div class="qprev"><div class="ph">' + tt('Chọn câu hỏi để xem nội dung (chỉ MC thấy).', 'Select a question to preview it (host only).') + '</div></div>';
+    return '<div class="qprev"><div class="k">' + esc(TM.qLabel(ref)) + '<i class="' + (qOpen ? 'on' : '') + '">' + (qOpen ? tt('ĐANG HIỆN', 'ON SCREEN') : tt('CHƯA HIỆN', 'HIDDEN')) + '</i></div><div class="q">' + esc(qText(o)) + '</div><div class="a">' + tt('Đáp án: ', 'Answer: ') + esc(aText(o) || '—') + '<small>' + (ansOpen ? tt('đã công bố', 'revealed') : tt('chỉ MC thấy', 'host only')) + '</small></div></div>';
   }
-  function qgrid(list, s, used, cur, enabled, extraDis) {
-    return '<div class="qgrid">' + list.map((q, i) => { const sel = cur && cur.s === s && cur.i === i; const u = used && used[i]; return '<button data-act="select" data-s="' + s + '" data-i="' + i + '" class="' + (u && !sel ? 'used ' : '') + (sel ? 'sel' : '') + '"' + (!enabled || (u && !sel) || (extraDis && !sel) ? ' disabled' : '') + ' title="' + esc(qText(q)) + '">' + (i + 1) + '</button>'; }).join('') + (list.length ? '' : '<span class="muted">' + tt('(trống)', '(empty)') + '</span>') + '</div>';
+  function timerRow(canRun, canReset) {
+    const c = pub.clocks.ans;
+    return row('', btn(c.running ? 'ansPause' : 'ansResume', c.running ? tt('⏸ Tạm dừng giờ', '⏸ Pause timer') : tt('▶ Chạy tiếp giờ', '▶ Resume timer'), 'btn-ghost', { dis: c.running ? false : !canRun || c.remain <= 0 }) + btn('ansReset', tt('Đặt lại', 'Reset'), 'btn-ghost half', { dis: !canReset }));
+  }
+  function judgeRow(en, revealDis, revealTitle) {
+    return row('l', btn('reveal', tt('XEM ĐÁP ÁN', 'SHOW ANSWER'), 'btn-gold', { dis: revealDis, title: revealTitle }) + btn('judge', tt('ĐÚNG', 'CORRECT'), 'btn-ok' + (en ? ' cta' : ''), { data: { ok: 1 }, dis: !en }) + btn('judge', tt('SAI', 'INCORRECT'), 'btn-no', { data: { ok: 0 }, dis: !en }));
   }
   function flipBlock(st, team) {
-    const C = pub.clocks.flip;
-    let h = '<div class="okbox">' + (team != null ? fmt(tt('Mời {t} lật 2 ô! Đã lật {n}/2.', '{t}, flip 2 tiles! {n}/2 flipped.'), { t: tn(team), n: st.picks.length }) : fmt(tt('Lật 2 ô: {n}/2.', 'Flip 2 tiles: {n}/2.'), { n: st.picks.length })) + '</div>';
-    h += '<p class="note">' + (ST().pickMode === 'interactive' ? tt('Chế độ tương tác: người chơi chạm vào màn hình cảm ứng đã ghép nối. MC vẫn có thể bấm ô trên bảng bên dưới nếu cần.', 'Interactive mode: players touch the paired screen. The host can still click tiles below if needed.') : tt('Chế độ trình chiếu: bấm số ô đội đọc trên bảng bên dưới.', 'Presentation mode: click the tile number the team calls on the board below.')) + '</p>';
-    h += '<div class="row">' + btn(C.running ? 'flipPause' : 'flipResume', C.running ? tt('Dừng giờ lật', 'Pause flip timer') : tt('Chạy giờ lật', 'Resume flip timer'), 'btn-ghost sm') + btn('flipReset', tt('Đặt lại giờ lật', 'Reset flip timer'), 'btn-ghost sm') + '</div>';
-    return h;
+    const c = pub.clocks.flip;
+    return '<div class="ok-box">' + (team != null ? fmt(tt('Mời {t} lật 2 ô!', '{t}, flip 2 tiles!'), { t: tn(team) }) : tt('Lật 2 ô!', 'Flip 2 tiles!')) + '<small>' + fmt(tt('Bấm vào ô trên bảng bên trái · đã lật {n}/2', 'Click the tiles on the board · {n}/2 flipped'), { n: st.picks.length }) + '</small></div>' +
+      row('', btn(c.running ? 'flipPause' : 'flipResume', c.running ? tt('⏸ Tạm dừng giờ lật', '⏸ Pause flip timer') : tt('▶ Chạy tiếp giờ lật', '▶ Resume flip timer'), 'btn-ghost') + btn('flipReset', tt('Đặt lại', 'Reset'), 'btn-ghost half'));
   }
-  function ansRow(canRun, canReset) {
-    const c = pub.clocks.ans;
-    return btn(c.running ? 'ansPause' : 'ansResume', c.running ? tt('Dừng giờ', 'Pause timer') : tt('Chạy tiếp', 'Resume timer'), 'btn-ghost sm', { dis: c.running ? false : !canRun || c.remain <= 0 }) + btn('ansReset', tt('Đặt lại giờ', 'Reset timer'), 'btn-ghost sm', { dis: !canReset });
-  }
-  function renderFlow() {
-    const g = G(); let h = '<div class="ch"><b>' + tt('Câu hỏi & chấm điểm', 'Questions & judging') + '</b><span class="sp"></span><span class="muted">' + esc(stageLabel()) + '</span></div>';
-    if (g.prac) h += pracFlow(g);
-    else if (!g.created) h += '<p class="muted">' + tt('Chưa có trận đấu.', 'No match yet.') + '</p>' + btn('newMatchDlg', tt('Trận mới', 'New match'), 'btn-primary bigbtn');
-    else if (g.stage === 'main') h += mainFlow(g);
-    else if (g.stage === 'tie') h += tieFlow(g);
-    else if (g.stage === 'estimate') h += estFlow(g);
-    else h += resultFlow(g);
-    put($('#cFlow'), h);
-  }
-  function mainFlow(g) {
-    const m = g.m; let h = '';
+  function mainPanel(g) {
+    const m = g.m, S = ST();
     if (!m.started) {
-      h += '<div class="qlab">' + tt('ĐỘI ĐI TRƯỚC', 'FIRST TEAM') + '</div><div class="row">' + [0, 1].map(i => btn('first', esc(teamName(i)), m.first === i ? 'btn-ghost on' : 'btn-ghost', { data: { v: i } })).join('') + '</div>';
-      h += btn('startMain', tt('BẮT ĐẦU VÒNG CHÍNH', 'START MAIN ROUND'), 'btn-primary bigbtn cta');
-      h += '<p class="note">' + fmt(tt('Bộ câu hỏi của trận: {m} câu chính, {b} dự phòng, {t} câu phụ, {e} ước lượng.', 'This match: {m} main, {b} backup, {t} tie, {e} estimation questions.'), { m: g.qs.m.length, b: g.qs.b.length, t: g.qs.t.length, e: g.qs.e.length }) + '</p>';
-      return h;
+      return '<div><div class="flabel">' + tt('Đội đi trước', 'Team going first') + '</div><div class="seg">' + [0, 1].map(i => '<button data-act="first" data-v="' + i + '" style="--tc:' + esc(teamColor(i)) + '" class="' + (m.first === i ? 'on' : '') + '">' + esc(teamName(i)) + '</button>').join('') + '</div></div>' +
+        row('xl', btn('startMain', tt('BẮT ĐẦU VÒNG CHÍNH', 'START MAIN ROUND'), 'btn-primary cta')) +
+        '<div class="small">' + fmt(tt('Vòng chính {m} phút · trả lời {a} giây · lật ô {f} giây · ghi nhớ {h} giây. Đổi trong Cài đặt.', 'Main round {m} min · answer {a}s · flip {f}s · memorize {h}s. Change in Settings.'), { m: S.times.main, a: S.times.answer, f: S.times.flip, h: S.times.hold }) + '<br>' +
+        fmt(tt('Bộ câu hỏi: {m} câu chính, {b} dự phòng, {t} câu phụ, {e} ước lượng.', 'Questions: {m} main, {b} backup, {t} tie, {e} estimation.'), { m: g.qs.m.length, b: g.qs.b.length, t: g.qs.t.length, e: g.qs.e.length }) + '</div>' +
+        '<div class="p-foot">' + row('', btn('shuffle', tt('🔀 Đảo vị trí hình', '🔀 Shuffle Board'))) + '</div>';
     }
-    if (m.phase === 'ended') return '<div class="okbox">' + (m.endReason === 'done' ? tt('Đã tìm đủ 8 cặp.', 'All 8 pairs found.') : tt('Hết giờ vòng chính.', 'Main round time is up.')) + ' ' + tt('Đang xác định kết quả…', 'Deciding the result…') + '</div>';
-    const pickable = m.phase === 'question' && !m.qOpen;
-    const allMain = m.used.m.every(Boolean);
-    h += '<div class="qlab">' + fmt(tt('LƯỢT CỦA {t}', 'TURN: {t}'), { t: tn(m.turn) }) + '</div>';
-    h += '<div class="qlab">' + tt('CÂU HỎI VÒNG CHÍNH', 'MAIN QUESTIONS') + '</div>' + qgrid(g.qs.m, 'm', m.used.m, m.q, pickable);
-    h += '<div class="qlab">' + tt('DỰ PHÒNG', 'BACKUP') + (allMain ? '' : ' · ' + tt('mở khi dùng hết câu chính', 'unlocks after all main questions')) + '</div>' + qgrid(g.qs.b, 'b', m.used.b, m.q, pickable && allMain);
-    if (g.qs.x.length) h += '<div class="qlab">' + tt('BỔ SUNG', 'EXTRA') + '</div>' + qgrid(g.qs.x, 'x', m.used.x, m.q, pickable);
-    h += preview(m.q, m.qOpen, m.ansOpen);
-    if (m.phase === 'question') {
-      h += btn('open', m.qOpen ? tt('ĐANG TÍNH GIỜ', 'TIMER RUNNING') : tt('▶ BẮT ĐẦU TÍNH GIỜ', '▶ START TIMER'), 'btn-primary bigbtn' + (m.q && !m.qOpen ? ' cta' : ''), { dis: !m.q || m.qOpen });
-      h += '<div class="row"><span class="muted">' + tt('Giờ trả lời:', 'Answer timer:') + '</span> ' + clk('ans') + ansRow(m.qOpen && !m.verdict, !m.verdict) + '</div>';
-      const en = m.qOpen && !m.verdict;
-      h += '<div class="judge">' + btn('reveal', tt('XEM ĐÁP ÁN', 'SHOW ANSWER'), 'btn-gold', { dis: !en || m.ansOpen }) + btn('judge', tt('✔ ĐÚNG', '✔ CORRECT'), 'btn-ok', { data: { ok: 1 }, dis: !en }) + btn('judge', tt('✘ SAI', '✘ INCORRECT'), 'btn-no', { data: { ok: 0 }, dis: !en }) + '</div>';
-      h += '<p class="note">' + tt('Xem đáp án: dừng giờ, công bố đáp án, chưa chấm. Đúng: cấp quyền lật 2 ô. Sai: công bố đáp án đúng và chuyển lượt.', 'Show answer: stops the timer and reveals, no scoring. Correct: grants 2 flips. Incorrect: shows the correct answer and passes the turn.') + '</p>';
-      if (!m.qOpen) h += '<details class="note"><summary>' + tt('Thêm câu hỏi bổ sung (ngoài bộ câu)', 'Add an extra question') + '</summary><div class="fld"><textarea class="inp" id="xq" placeholder="' + tt('Nội dung câu hỏi', 'Question text') + '"></textarea></div><div class="fld"><input class="inp" id="xa" placeholder="' + tt('Đáp án', 'Answer') + '"></div>' + btn('addExtra', tt('Thêm & chọn câu này', 'Add & select'), 'btn-ghost sm') + '</details>';
-    } else if (m.phase === 'flip') h += flipBlock(m, m.turn);
-    else h += '<div class="okbox">' + tt('Đang xử lý kết quả lật ô…', 'Processing the flip…') + '</div>';
+    let h = '';
+    if (m.phase === 'ended') h += '<div class="ok-box">' + (m.endReason === 'done' ? tt('Đã tìm đủ 8 cặp.', 'All 8 pairs found.') : tt('Hết giờ vòng chính.', 'Main round time is up.')) + '</div>';
+    else {
+      const pickable = m.phase === 'question' && !m.qOpen, allMain = m.used.m.every(Boolean);
+      const uM = m.used.m.filter(Boolean).length, uB = m.used.b.filter(Boolean).length;
+      h += '<div class="sec">' + tt('CÂU HỎI', 'QUESTIONS') + '<span>' + fmt(tt('Chính {a}/{n} · Dự phòng {b}/{k}', 'Main {a}/{n} · Backup {b}/{k}'), { a: uM, n: g.qs.m.length, b: uB, k: g.qs.b.length }) + '</span></div>';
+      h += '<div class="qg">' + g.qs.m.map((o, i) => qbtn({ s: 'm', i }, TM.pad(i + 1), m.used.m[i], pickable, m.q, '', o)).join('') +
+        g.qs.b.map((o, i) => qbtn({ s: 'b', i }, 'B' + (i + 1), m.used.b[i], pickable && allMain, m.q, 'bk', o)).join('') +
+        g.qs.x.map((o, i) => qbtn({ s: 'x', i }, '+' + (i + 1), m.used.x[i], pickable, m.q, '', o)).join('') + '</div>';
+      if (g.qs.b.length && !allMain) h += '<div class="small">' + tt('Câu dự phòng (B) mở khi dùng hết câu chính.', 'Backup questions (B) unlock after all main questions.') + '</div>';
+      h += preview(m.q, m.qOpen, m.ansOpen);
+      if (m.phase === 'question') {
+        const en = m.qOpen && !m.verdict;
+        h += row('xl', btn('open', m.qOpen ? tt('ĐANG TÍNH GIỜ…', 'TIMER RUNNING…') : tt('▶ BẮT ĐẦU TÍNH GIỜ', '▶ START TIMER'), 'btn-primary' + (m.q && !m.qOpen ? ' cta' : ''), { dis: !m.q || m.qOpen }));
+        h += timerRow(en, !m.verdict);
+        h += judgeRow(en, !en || m.ansOpen);
+      } else if (m.phase === 'flip') h += flipBlock(m, m.turn);
+      else h += '<div class="ok-box">' + tt('Đang xử lý kết quả…', 'Processing…') + '</div>';
+    }
+    const mc = g.clocks.main;
+    h += '<div class="p-foot"><div class="clk">' + tt('ĐỒNG HỒ VÒNG CHÍNH', 'MAIN ROUND CLOCK') + '<b class="tnum" data-clk="main"></b></div>' +
+      row('', btn('mainToggle', mc.running ? tt('Tạm dừng đồng hồ', 'Pause clock') : tt('Tiếp tục đồng hồ', 'Resume clock'), 'btn-ghost', { dis: m.phase === 'ended' || mc.remain <= 0 }) + btn('mainReset', tt('Đặt lại', 'Reset'), 'btn-ghost', { dis: m.phase === 'ended' }) + btn('addExtraDlg', tt('+ Câu bổ sung', '+ Extra question'), 'btn-ghost', { dis: !(m.phase === 'question' && !m.qOpen) })) +
+      row('', btn('adjustToggle', adjusting ? tt('Xong chỉnh điểm', 'Done') : tt('Chỉnh điểm', 'Adjust scores'), adjusting ? 'btn-ghost on' : 'btn-ghost') + btn('shuffle', tt('🔀 Đảo hình', '🔀 Shuffle'), 'btn-ghost') + btn('endMain', tt('Kết thúc vòng', 'End round'), 'btn-danger', { dis: m.phase === 'ended' || m.phase === 'resolve' })) + '</div>';
     return h;
   }
-  function tieFlow(g) {
-    const t = g.t; let h = '';
-    if (!t.started) return '<div class="okbox">' + tt('Hai đội hòa điểm vòng chính. Vòng phụ: 4 ô, đúng 1 cặp.', 'Main round tied. Tie-breaker: 4 tiles, exactly one pair.') + '</div>' + btn('startTie', tt('BẮT ĐẦU VÒNG PHỤ', 'START TIE-BREAKER'), 'btn-primary bigbtn cta');
-    const pickable = t.phase === 'question' && !t.qOpen;
-    h += '<div class="qlab">' + tt('CÂU HỎI VÒNG PHỤ', 'TIE-BREAKER QUESTIONS') + '</div>' + qgrid(g.qs.t, 't', t.used, t.q, pickable);
-    h += preview(t.q, t.qOpen, t.ansOpen);
+  function tiePanel(g) {
+    const t = g.t;
+    if (!t.started) return '<div class="note-box">' + fmt(tt('Hai đội hòa {a}–{b}. Vòng phụ: bảng 4 ô có đúng 1 cặp. Đội bấm chuông trước được trả lời; đúng thì được lật 2 ô, lật trúng cặp là thắng.', 'Tied at {a}–{b}. Tie-breaker: 4 tiles, exactly one pair. The first team to buzz answers; a correct answer earns 2 flips; finding the pair wins.'), { a: g.m.scores[0], b: g.m.scores[1] }) + '</div>' + row('xl', btn('startTie', tt('BẮT ĐẦU VÒNG PHỤ', 'START TIE-BREAKER'), 'btn-primary cta'));
+    let h = '';
     if (t.phase === 'question') {
-      h += btn('open', t.qOpen ? tt('ĐÃ CÔNG BỐ CÂU HỎI', 'QUESTION SHOWN') : tt('▶ CÔNG BỐ CÂU HỎI', '▶ SHOW QUESTION'), 'btn-primary bigbtn' + (t.q && !t.qOpen ? ' cta' : ''), { dis: !t.q || t.qOpen });
-      h += '<div class="qlab">' + tt('ĐỘI GIÀNH QUYỀN TRẢ LỜI', 'TEAM THAT BUZZED IN') + '</div><div class="row">' + [0, 1].map(i => btn('claim', esc(teamName(i)), t.answering === i ? 'btn-ghost on' : 'btn-ghost', { data: { team: i }, dis: !t.qOpen || t.answering != null || t.tried.includes(i) })).join('') + '</div>';
-      if (t.wrongTeam != null) h += '<div class="warnbox">' + fmt(tt('{a} trả lời sai. {b} đang có quyền trả lời cùng câu hỏi; đáp án vẫn được giữ kín.', '{a} was wrong. {b} may answer the same question; the answer stays hidden.'), { a: tn(t.wrongTeam), b: tn(t.answering) }) + '</div>';
-      h += '<div class="row"><span class="muted">' + tt('Giờ trả lời:', 'Answer timer:') + '</span> ' + clk('ans') + ansRow(t.answering != null, true) + '</div>';
-      const en = t.answering != null, lock = t.wrongTeam != null;
-      h += '<div class="judge">' + btn('reveal', tt('XEM ĐÁP ÁN', 'SHOW ANSWER'), 'btn-gold', { dis: !t.qOpen || t.ansOpen || lock, title: lock ? tt('Đội còn lại vẫn đang có quyền trả lời', 'The other team still has the right to answer') : '' }) + btn('judge', tt('✔ ĐÚNG', '✔ CORRECT'), 'btn-ok', { data: { ok: 1 }, dis: !en }) + btn('judge', tt('✘ SAI', '✘ INCORRECT'), 'btn-no', { data: { ok: 0 }, dis: !en }) + '</div>';
-      if (lock) h += '<button class="danger-link" data-act="reveal">' + tt('Bỏ qua quyền trả lời của đội còn lại và công bố đáp án…', 'Skip the other team’s right and reveal the answer…') + '</button>';
+      const pickable = !t.qOpen, lock = t.wrongTeam != null;
+      h += '<div class="sec">' + tt('CÂU HỎI PHỤ', 'TIE-BREAKER QUESTIONS') + '<span>' + fmt(tt('Còn {n} câu', '{n} left'), { n: t.used.filter(u => !u).length }) + '</span></div>';
+      h += '<div class="qg" style="grid-template-columns:repeat(6,1fr)">' + g.qs.t.map((o, i) => qbtn({ s: 't', i }, 'P' + (i + 1), t.used[i], pickable, t.q, '', o)).join('') + '</div>';
+      h += preview(t.q, t.qOpen, t.ansOpen);
+      h += row('xl', btn('open', t.qOpen ? tt('ĐÃ CÔNG BỐ CÂU HỎI', 'QUESTION SHOWN') : tt('▶ CÔNG BỐ CÂU HỎI', '▶ SHOW QUESTION'), 'btn-primary' + (t.q && !t.qOpen ? ' cta' : ''), { dis: !t.q || t.qOpen }));
+      h += '<div><div class="flabel">' + tt('Đội giành quyền trả lời', 'Team that buzzed in') + '</div><div class="seg">' + [0, 1].map(i => '<button data-act="claim" data-team="' + i + '" style="--tc:' + esc(teamColor(i)) + '" class="' + (t.answering === i ? 'on' : '') + '"' + (!t.qOpen || t.answering != null || t.tried.includes(i) ? ' disabled' : '') + '>' + esc(teamName(i)) + (t.tried.includes(i) ? ' ✕' : '') + '</button>').join('') + '</div></div>';
+      if (lock) h += '<div class="note-box">' + fmt(tt('{a} trả lời sai. {b} được trả lời cùng câu; đáp án vẫn giữ kín.', '{a} was wrong. {b} may answer the same question; the answer stays hidden.'), { a: tn(t.wrongTeam), b: tn(t.answering) }) + '</div>';
+      h += timerRow(t.answering != null, true);
+      h += judgeRow(t.answering != null, !t.qOpen || t.ansOpen || lock, lock ? tt('Đội còn lại vẫn đang có quyền trả lời', 'The other team still has the right to answer') : '');
+      if (lock) h += '<button class="lnk" data-act="reveal">' + tt('Bỏ qua quyền trả lời của đội còn lại và công bố đáp án…', 'Skip the other team’s right and reveal the answer…') + '</button>';
     } else if (t.phase === 'flip') h += flipBlock(t, t.answering);
-    else h += '<div class="okbox">' + (t.phase === 'ended' && g.r ? fmt(tt('{t} thắng vòng phụ!', '{t} wins the tie-breaker!'), { t: tn(g.r.winner) }) : tt('Đang xử lý…', 'Processing…')) + '</div>';
-    h += '<div class="row" style="margin-top:14px">' + btn('toEst', tt('Chuyển sang câu ước lượng', 'Go to estimation question'), 'btn-danger sm', { dis: t.phase === 'resolve' || t.phase === 'ended' }) + '</div>';
+    else h += '<div class="ok-box">' + (t.phase === 'ended' && g.r ? fmt(tt('{t} thắng vòng phụ!', '{t} wins the tie-breaker!'), { t: tn(g.r.winner) }) : tt('Đang xử lý…', 'Processing…')) + '</div>';
+    const tc = g.clocks.tie;
+    h += '<div class="p-foot"><div class="clk">' + tt('ĐỒNG HỒ VÒNG PHỤ', 'TIE-BREAKER CLOCK') + '<b class="tnum" data-clk="tie"></b></div>' +
+      row('', btn('tieToggle', tc.running ? tt('Tạm dừng đồng hồ', 'Pause clock') : tt('Tiếp tục đồng hồ', 'Resume clock'), 'btn-ghost', { dis: tc.remain <= 0 }) + btn('tieReset', tt('Đặt lại', 'Reset'), 'btn-ghost') + btn('shuffle', tt('🔀 Đảo hình', '🔀 Shuffle'), 'btn-ghost')) +
+      row('', btn('toEst', tt('Chuyển sang câu ước lượng', 'Go to estimation'), 'btn-danger', { dis: t.phase === 'resolve' || t.phase === 'ended' })) + '</div>';
     return h;
   }
-  function estFlow(g) {
+  function estPanel(g) {
     const E = g.e; let h = '';
-    h += '<div class="qlab">' + tt('CHỌN CÂU ƯỚC LƯỢNG', 'PICK ESTIMATION QUESTION') + '</div><div class="qgrid">' + g.qs.e.map((q, i) => '<button data-act="estPick" data-pi="' + i + '" class="' + (E.pi === i ? 'sel' : '') + '" title="' + esc(qText(q)) + '">' + (i + 1) + '</button>').join('') + '<button data-act="estCustomDlg">' + tt('Tự nhập…', 'Custom…') + '</button></div>';
+    h += '<div class="sec">' + tt('CÂU ƯỚC LƯỢNG', 'ESTIMATION') + '<span>' + fmt(tt('Lần {n}', 'Round {n}'), { n: E.round }) + '</span></div>';
+    h += '<div class="seg">' + g.qs.e.map((q, i) => '<button data-act="estPick" data-pi="' + i + '" class="' + (E.pi === i ? 'on' : '') + '" title="' + esc(qText(q)) + '">E' + (i + 1) + '</button>').join('') + '<button data-act="estCustomDlg" class="' + (E.pi < 0 ? 'on' : '') + '">' + tt('Tự nhập', 'Custom') + '</button></div>';
     const qq = TM.lang === 'en' ? (E.q.en || E.q.vi) : (E.q.vi || E.q.en);
-    h += '<div class="prev"><div class="k">' + tt('CÂU ƯỚC LƯỢNG', 'ESTIMATION') + (E.round > 1 ? ' · ' + E.round : '') + '<span class="live ' + (E.shown ? 'on' : 'off') + '">' + (E.shown ? tt('ĐANG HIỆN', 'ON SCREEN') : tt('CHƯA CÔNG BỐ', 'NOT SHOWN')) + '</span></div><div class="q">' + esc(qq || tt('(chưa có nội dung)', '(empty)')) + '</div><div class="a">' + tt('Đáp án chuẩn: ', 'Correct answer: ') + esc(E.correct || '—') + ' ' + esc(E.unit || '') + '<small>' + tt('chỉ MC thấy đến khi so sánh', 'host only until compared') + '</small></div></div>';
-    h += btn('estShow', tt('▶ CÔNG BỐ CÂU HỎI', '▶ SHOW QUESTION'), 'btn-primary bigbtn' + (E.shown ? '' : ' cta'), { dis: E.shown || !qq });
-    h += '<div class="row g2" style="margin-top:10px"><label class="fld"><span>' + esc(teamName(0)) + '</span><input class="inp" id="estA0" value="' + esc(E.a[0]) + '" inputmode="decimal"></label><label class="fld"><span>' + esc(teamName(1)) + '</span><input class="inp" id="estA1" value="' + esc(E.a[1]) + '" inputmode="decimal"></label></div>';
-    h += '<div class="row">' + btn('estCompare', tt('SO SÁNH', 'COMPARE'), 'btn-gold lg') + btn('estNew', tt('Câu ước lượng mới', 'New estimation question'), 'btn-ghost') + '</div>';
-    if (E.result) {
-      const R = E.result;
-      h += '<div class="okbox">' + tt('Đáp án chuẩn: ', 'Correct: ') + R.c + ' · ' + esc(teamName(0)) + ': ' + R.a[0] + ' (±' + Math.round(R.d[0] * 1000) / 1000 + ') · ' + esc(teamName(1)) + ': ' + R.a[1] + ' (±' + Math.round(R.d[1] * 1000) / 1000 + ')<br><b>' + (R.winner == null ? tt('Sai lệch bằng nhau: dùng câu ước lượng mới.', 'Equal difference: use a new question.') : fmt(tt('{t} gần đáp án hơn.', '{t} is closer.'), { t: esc(teamName(R.winner)) })) + '</b></div>';
-      h += btn('announce', tt('🏆 CÔNG BỐ ĐỘI THẮNG', '🏆 ANNOUNCE WINNER'), 'btn-gold bigbtn', { dis: R.winner == null });
-    }
+    h += '<div class="qprev"><div class="k">' + tt('CÂU ƯỚC LƯỢNG', 'ESTIMATION') + '<i class="' + (E.shown ? 'on' : '') + '">' + (E.shown ? tt('ĐANG HIỆN', 'ON SCREEN') : tt('CHƯA HIỆN', 'HIDDEN')) + '</i></div><div class="q">' + esc(qq || tt('(chưa có nội dung)', '(empty)')) + '</div><div class="a">' + tt('Đáp án chuẩn: ', 'Correct answer: ') + esc(E.correct || '—') + ' ' + esc(E.unit || '') + '<small>' + tt('chỉ MC thấy', 'host only') + '</small></div></div>';
+    h += row('l', btn('estShow', E.shown ? tt('ĐÃ CÔNG BỐ CÂU HỎI', 'QUESTION SHOWN') : tt('▶ CÔNG BỐ CÂU HỎI', '▶ SHOW QUESTION'), 'btn-primary' + (E.shown ? '' : ' cta'), { dis: E.shown || !qq }));
+    h += [0, 1].map(i => '<div><div class="flabel" style="color:' + esc(teamColor(i)) + '">' + fmt(tt('Đáp án {t}', '{t} answer'), { t: esc(teamName(i)) }) + '</div><input class="mini-in" id="estA' + i + '" inputmode="decimal" value="' + esc(E.a[i]) + '"></div>').join('');
+    h += row('l', btn('estCompare', tt('SO SÁNH', 'COMPARE'), 'btn-gold' + (E.shown && !E.result ? ' cta' : '')));
+    if (E.result && E.result.winner == null) h += '<div class="note-box">' + tt('Sai lệch bằng nhau: dùng câu ước lượng mới.', 'Equal difference: use a new question.') + '</div>' + row('l', btn('estNew', tt('Câu ước lượng mới', 'New estimation question'), 'btn-gold cta'));
+    if (E.result && E.result.winner != null) h += row('xl', btn('announce', tt('🏆 CÔNG BỐ ĐỘI THẮNG', '🏆 ANNOUNCE WINNER'), 'btn-gold cta'));
     return h;
   }
-  function resultFlow(g) {
-    return '<div class="okbox">' + (g.r ? fmt(tt('Đội thắng: {t}', 'Winner: {t}'), { t: tn(g.r.winner) }) : '') + '</div><div class="row">' + btn('replayFx', tt('Phát lại hiệu ứng', 'Replay effects'), 'btn-ghost') + btn('newMatchDlg', tt('Chơi lại', 'Play again'), 'btn-primary') + btn('view', tt('Về màn hình chào', 'Back to welcome'), 'btn-ghost', { data: { v: 'welcome' } }) + '</div>';
-  }
-  function pracFlow(g) {
-    const p = g.prac; let h = '<div class="warnbox">' + tt('Đang chơi thử: không tính điểm, không ảnh hưởng trận chính.', 'Practice: no points, the match is not affected.') + '</div>';
+  function pracPanel(g) {
+    const p = g.prac; let h = '';
     if (p.phase === 'question') {
-      h += btn('open', tt('▶ BẮT ĐẦU TÍNH GIỜ', '▶ START TIMER'), 'btn-primary bigbtn', { dis: p.clocks.ans.running });
-      h += '<div class="row"><span class="muted">' + tt('Giờ trả lời:', 'Answer timer:') + '</span> ' + clk('ans') + '</div>';
-      h += '<div class="judge">' + btn('judge', tt('✔ ĐÚNG', '✔ CORRECT'), 'btn-ok', { data: { ok: 1 } }) + btn('judge', tt('✘ SAI', '✘ INCORRECT'), 'btn-no', { data: { ok: 0 } }) + btn('practiceEnd', tt('Kết thúc', 'End'), 'btn-ghost') + '</div>';
+      const c = p.clocks.ans;
+      h += row('xl', btn(c.running ? 'ansPause' : 'open', c.running ? tt('⏸ Tạm dừng giờ', '⏸ Pause timer') : tt('▶ BẮT ĐẦU TÍNH GIỜ', '▶ START TIMER'), c.running ? 'btn-ghost' : 'btn-primary cta'));
+      h += row('', btn('ansReset', tt('Đặt lại giờ', 'Reset timer'), 'btn-ghost'));
+      h += row('l', btn('judge', tt('ĐÚNG', 'CORRECT'), 'btn-ok', { data: { ok: 1 } }) + btn('judge', tt('SAI', 'INCORRECT'), 'btn-no', { data: { ok: 0 } }));
     } else if (p.phase === 'flip') h += flipBlock(p, null);
-    else h += '<div class="okbox">' + tt('Đang xử lý…', 'Processing…') + '</div>';
+    else h += '<div class="ok-box">' + tt('Đang xử lý…', 'Processing…') + '</div>';
+    h += '<div class="p-foot">' + row('', btn('shuffle', tt('Xáo lại bảng thử', 'Reshuffle practice board'), 'btn-ghost')) + row('l', btn('practiceEnd', tt('KẾT THÚC CHƠI THỬ', 'END PRACTICE'), 'btn-gold')) + '</div>';
     return h;
   }
 
-  /* ---------- bảng ô thu nhỏ: MC bấm ô ở chế độ trình chiếu ---------- */
-  const mboard = new TM.Board($('#mBoard'), i => act('pick', { i }));
-  function renderBoard() {
-    const b = pub.board;
-    $('#bHint').textContent = !b ? tt('(không có bảng ô ở bước này)', '(no board at this step)') : b.pickable ? tt('Đang được lật: bấm vào ô để mở', 'Flip time: click a tile to open it') : tt('Bảng đang khóa', 'Board locked');
-    mboard.update(b ? Object.assign({}, b, { pickable: b.pickable && syncStatus !== 'off' }) : null, pub.gameId + ':' + pub.mode + ':' + pub.stage, TM.revOf(pub.s));
-    fitBoard();
-  }
-  function fitBoard() { const w = $('#bWrap').clientWidth || 600, k = Math.min(1, w / 1240); $('#bScale').style.transform = 'scale(' + k + ')'; $('#bWrap').style.height = (pub && pub.board ? 694 * k : 40) + 'px'; }
-
-  /* ---------- chế độ chọn ô & ghép nối ---------- */
-  function renderPick() {
-    const S = ST(), d = priv.device, inter = S.pickMode === 'interactive';
-    const online = d.paired && priv.deviceSeen && (Date.now() - priv.deviceSeen < 20000);
-    let h = '<div class="ch"><b>' + tt('Chế độ chọn ô', 'Pick mode') + '</b></div><div class="row">';
-    h += btn('pickMode', tt('Trình chiếu (MC chọn ô)', 'Presentation (host picks)'), !inter ? 'btn-ghost on' : 'btn-ghost', { data: { v: 'present' } });
-    h += btn('pickMode', tt('Tương tác (người chơi chạm)', 'Interactive (players touch)'), inter ? 'btn-ghost on' : 'btn-ghost', { data: { v: 'interactive' } }) + '</div>';
-    if (inter) {
-      h += '<div class="row"><span class="pill ' + (online ? '' : d.paired ? 'poll' : 'off') + '"><i></i>' + (d.paired ? (online ? tt('Màn hình cảm ứng đang kết nối', 'Touch screen connected') : tt('Đã ghép nối, chưa thấy tín hiệu', 'Paired, no signal yet')) : tt('Chưa ghép nối màn hình cảm ứng', 'No touch screen paired')) + '</span></div>';
-      h += '<div class="row">' + btn('pairCode', d.paired ? tt('Ghép màn hình khác', 'Pair another screen') : tt('Tạo mã ghép nối', 'Create pairing code'), 'btn-primary sm') + btn('unpair', tt('Hủy ghép nối', 'Unpair'), 'btn-danger sm', { dis: !d.paired }) + '</div>';
-      h += '<p class="note">' + tt('Trên màn hình cảm ứng: mở trang chủ, bấm biểu tượng bàn tay ở góc trên, nhập mã 6 số. Chỉ màn hình đã ghép nối mới chọn được ô, và chỉ khi MC đã chấm Đúng. Các màn hình khác chỉ xem.', 'On the touch screen: open the home page, press the hand icon at the top, enter the 6-digit code. Only the paired screen can pick, and only after the host marks Correct. Other screens are view-only.') + '</p>';
-    } else h += '<p class="note">' + tt('Người chơi đọc số ô, MC bấm ô trên bảng phía trên. Màn hình người chơi cập nhật ngay.', 'Players call a tile number and the host clicks it on the board above. The player screen updates instantly.') + '</p>';
-    put($('#cPick'), h);
-  }
-
-  /* ---------- xử lý nút bấm ---------- */
+  /* ---------- xử lý nút bấm trên màn hình chơi ---------- */
   document.addEventListener('click', async e => {
-    const b = e.target.closest('[data-act]'); if (!b || b.disabled || !priv) return;
-    const a = b.dataset.act, d = b.dataset, g = G();
+    if (!priv || !e.target.closest('#stage')) return;
+    const t = e.target, g = G();
+    if (t.closest('.js-lang button')) return act('lang', { lang: t.closest('button').dataset.l });
+    if (t.closest('.js-music')) { if (!ST().musicUrl) return toast(tt('Chưa có nhạc nền: tải trong Cài đặt.', 'No music yet: upload it in Settings.'), 'err'); return act('music', { playing: !(g.music && g.music.playing) }); }
+    if (t.closest('.js-open')) return openPlayer();
+    if (t.closest('.js-settings')) return openSp();
+    if (t.closest('#btnPause')) return act(g.paused ? 'resume' : 'pause');
+    if (t.closest('#btnResume')) return act('resume');
+    if (t.closest('#btnHome') || t.closest('#btnResHome')) return act('view', { v: 'welcome' });
+    if (t.closest('#btnStart')) { if (matchActive()) return act('view', { v: 'game' }); return newMatchDlg(); }
+    if (t.closest('#btnPractice')) return act('practiceStart');
+    if (t.closest('#btnPlayAgain')) return newMatchDlg();
+    if (t.closest('#btnReplayFx')) return act('replayFx');
+    const adj = t.closest('.tcard .adj button');
+    if (adj) return act('adjust', { team: +adj.closest('.tcard').dataset.team, d: +adj.dataset.d });
+    const b = t.closest('[data-act]'); if (!b || b.disabled) return;
+    const a = b.dataset.act, d = b.dataset;
     switch (a) {
       case 'newMatchDlg': return newMatchDlg();
-      case 'view': return act('view', { v: d.v });
       case 'first': return act('first', { v: +d.v });
       case 'select': return act('select', { s: d.s, i: +d.i });
       case 'judge': return act('judge', { ok: d.ok === '1' });
       case 'claim': return act('claim', { team: +d.team });
-      case 'adjust': return act('adjust', { team: +d.team, d: +d.d });
-      case 'music': return act('music', { playing: !(g.music && g.music.playing) });
-      case 'pickMode': return saveSettings({ pickMode: d.v }, true);
+      case 'adjustToggle': adjusting = !adjusting; return render();
       case 'estPick': return act('estPick', { pi: +d.pi });
       case 'estCustomDlg': return estCustomDlg();
       case 'estCompare': { const r = await act('estSet', { a0: $('#estA0').value, a1: $('#estA1').value }); if (r) act('estCompare'); return; }
-      case 'addExtra': { const q = ($('#xq') || {}).value || '', an = ($('#xa') || {}).value || ''; if (!q.trim()) return toast(tt('Hãy nhập nội dung câu hỏi.', 'Enter the question text.'), 'err'); return act('addExtra', { q, a: an }); }
+      case 'addExtraDlg': return addExtraDlg();
       case 'shuffle': {
         const started = !g.prac && ((g.stage === 'main' && g.m.started) || (g.stage === 'tie' && g.t && g.t.started));
         if (started) {
@@ -449,10 +401,8 @@
       case 'mainReset': if (await confirmBox(tt('Đặt lại đồng hồ vòng chính?', 'Reset the main clock?'), tt('Đồng hồ vòng chính trở về thời gian ban đầu và dừng lại.', 'The main clock returns to its full time and stops.'), tt('Đặt lại', 'Reset'))) act('mainReset'); return;
       case 'tieReset': if (await confirmBox(tt('Đặt lại đồng hồ vòng phụ?', 'Reset the tie clock?'), tt('Đồng hồ vòng phụ trở về thời gian ban đầu và dừng lại.', 'The tie clock returns to its full time and stops.'), tt('Đặt lại', 'Reset'))) act('tieReset'); return;
       case 'toEst': if (await confirmBox(tt('Chuyển sang câu ước lượng?', 'Go to the estimation question?'), tt('Vòng phụ dừng lại; đội có đáp án ước lượng gần đúng hơn sẽ thắng.', 'The tie-breaker stops; the closer estimate wins.'), tt('Chuyển', 'Go'), true)) act('toEst'); return;
-      case 'pairCode': return pairDlg();
-      case 'unpair': if (await confirmBox(tt('Hủy ghép nối?', 'Unpair?'), tt('Màn hình cảm ứng hiện tại sẽ không chọn ô được nữa.', 'The current touch screen will no longer be able to pick tiles.'), tt('Hủy ghép nối', 'Unpair'), true)) act('unpair'); return;
-      case 'practiceStart': case 'practiceEnd': case 'pause': case 'resume': case 'startMain': case 'open': case 'ansPause': case 'ansResume': case 'ansReset':
-      case 'flipPause': case 'flipResume': case 'flipReset': case 'mainToggle': case 'startTie': case 'tieToggle': case 'estShow': case 'estNew': case 'announce': case 'replayFx':
+      case 'practiceEnd': case 'startMain': case 'open': case 'ansPause': case 'ansResume': case 'ansReset':
+      case 'flipPause': case 'flipResume': case 'flipReset': case 'mainToggle': case 'startTie': case 'tieToggle': case 'estShow': case 'estNew': case 'announce':
         return act(a);
     }
   });
@@ -463,17 +413,13 @@
     const running = g.created && g.stage !== 'result' && (g.m.started || g.stage !== 'main');
     let body = '';
     if (running) body += '<div class="warnbox">' + tt('Trận đang chơi sẽ được thay bằng trận mới (điểm và tiến độ hiện tại bị xóa).', 'The current match will be replaced (scores and progress are cleared).') + '</div>';
-    if (pf) {
-      body += '<p class="muted">' + fmt(tt('Bộ câu hỏi sẽ dùng (các câu đang Bật trong Ngân hàng): {m} câu chính, {b} dự phòng, {t} câu phụ, {e} ước lượng.', 'Question set (enabled in the bank): {m} main, {b} backup, {t} tie, {e} estimation.'), pf.counts) + (S.shuffleQ ? ' ' + tt('Thứ tự câu hỏi sẽ được xáo trộn.', 'Question order will be shuffled.') : '') + '</p>';
-      if (pf.warnings.length) body += '<div class="warnbox"><b>' + tt('Cần kiểm tra trước khi bắt đầu:', 'Check before starting:') + '</b><ul>' + pf.warnings.map(w => '<li>' + esc(TM.lang === 'en' ? w[1] : w[0]) + '</li>').join('') + '</ul></div>';
-      else body += '<div class="okbox">' + tt('Đủ câu hỏi, đáp án và hình ảnh.', 'Questions, answers and images are ready.') + '</div>';
-    }
+    if (pf && pf.warnings.length) body += '<div class="warnbox"><b>' + tt('Cần kiểm tra trước khi bắt đầu:', 'Check before starting:') + '</b><ul>' + pf.warnings.map(w => '<li>' + esc(TM.lang === 'en' ? w[1] : w[0]) + '</li>').join('') + '</ul></div>';
     body += '<div class="row g2"><label class="fld"><span>' + tt('Tên đội 1', 'Team 1 name') + '</span><input class="inp" id="nmT0" maxlength="24" value="' + esc(S.teams[0].name) + '"></label><label class="fld"><span>' + tt('Tên đội 2', 'Team 2 name') + '</span><input class="inp" id="nmT1" maxlength="24" value="' + esc(S.teams[1].name) + '"></label></div>';
     body += '<div class="fld"><span>' + tt('Đội đi trước', 'First team') + '</span><select class="inp" id="nmFirst"><option value="0">' + tt('Đội 1', 'Team 1') + '</option><option value="1">' + tt('Đội 2', 'Team 2') + '</option></select></div>';
-    body += '<p class="note">' + tt('Vị trí hình được đảo ngẫu nhiên tự động cho trận mới.', 'Tile images are shuffled automatically for the new match.') + '</p>';
+    if (pf) body += '<p class="note">' + fmt(tt('Bộ câu hỏi: {m} câu chính, {b} dự phòng, {t} câu phụ, {e} ước lượng (các câu đang Bật). Vị trí hình được đảo tự động.', 'Questions: {m} main, {b} backup, {t} tie, {e} estimation (enabled ones). Tile images are shuffled automatically.'), pf.counts) + '</p>';
     let vals = null;
-    const ok = await dialog(tt('Trận mới', 'New match'), body, [{ label: tt('Hủy', 'Cancel'), value: false }, { label: tt('Bắt đầu trận mới', 'Start new match'), cls: 'btn-primary', value: true, check: () => { vals = { teams: [$('#nmT0').value.trim() || 'ĐỘI 1', $('#nmT1').value.trim() || 'ĐỘI 2'], first: +$('#nmFirst').value }; return true; } }]);
-    if (ok && vals) { const r = await act('newMatch', vals); if (r) toast(tt('Đã tạo trận mới với bộ câu hỏi mới nhất.', 'New match created with the latest questions.'), 'good'); }
+    const ok = await dialog(tt('Trận mới', 'New match'), body, [{ label: tt('Hủy', 'Cancel'), value: false }, { label: tt('Vào trận', 'Enter match'), cls: 'btn-primary', value: true, check: () => { vals = { teams: [$('#nmT0').value.trim() || 'ĐỘI 1', $('#nmT1').value.trim() || 'ĐỘI 2'], first: +$('#nmFirst').value }; return true; } }]);
+    if (ok && vals) await act('newMatch', vals);
   }
   async function estCustomDlg() {
     let v = null;
@@ -481,10 +427,76 @@
       [{ label: tt('Hủy', 'Cancel'), value: false }, { label: tt('Dùng câu này', 'Use it'), cls: 'btn-primary', value: true, check: () => { v = { q: $('#ecQ').value, correct: $('#ecA').value, unit: $('#ecU').value }; if (!v.q.trim()) { toast(tt('Hãy nhập câu hỏi.', 'Enter a question.'), 'err'); return false; } return true; } }]);
     if (ok && v) act('estCustom', v);
   }
+  async function addExtraDlg() {
+    let v = null;
+    const ok = await dialog(tt('Thêm câu hỏi bổ sung', 'Add an extra question'), '<p class="note">' + tt('Dùng khi cần thêm câu ngoài bộ câu của trận. Câu này chỉ dùng cho trận đang chơi.', 'For a question outside this match’s set. It is only used in the current match.') + '</p><div class="fld"><span>' + tt('Câu hỏi', 'Question') + '</span><textarea class="inp" id="xq"></textarea></div><div class="fld"><span>' + tt('Đáp án', 'Answer') + '</span><input class="inp" id="xa"></div>',
+      [{ label: tt('Hủy', 'Cancel'), value: false }, { label: tt('Thêm & chọn câu này', 'Add & select'), cls: 'btn-primary', value: true, check: () => { v = { q: $('#xq').value, a: $('#xa').value }; if (!v.q.trim()) { toast(tt('Hãy nhập nội dung câu hỏi.', 'Enter the question text.'), 'err'); return false; } return true; } }]);
+    if (ok && v) act('addExtra', v);
+  }
+
+  /* ---------- trang cài đặt ---------- */
+  let spOpen = false, spTab = 'set';
+  function openSp(t) {
+    spOpen = true; $('#setPage').hidden = false; document.body.classList.add('sp-on');
+    showSp(t || spTab);
+  }
+  async function closeSp() {
+    if (setDirty && !await confirmBox(tt('Bỏ thay đổi chưa lưu?', 'Discard unsaved changes?'), tt('Bạn chưa bấm “Lưu cài đặt”. Quay lại màn hình chính sẽ bỏ các thay đổi này.', 'You have not pressed “Save settings”. Going back discards these changes.'), tt('Bỏ thay đổi', 'Discard'), true)) return;
+    if (setDirty) { draft = null; setDirty = false; }
+    spOpen = false; $('#setPage').hidden = true; document.body.classList.remove('sp-on');
+  }
+  function showSp(t) {
+    spTab = t;
+    $$('#spNav button').forEach(b => b.classList.toggle('on', b.dataset.sp === t));
+    $$('.sp-sec').forEach(s => s.classList.toggle('on', s.id === 'sp-' + t));
+    renderSp();
+  }
+  function renderSp() {
+    applyStatic();
+    if (spTab === 'set') { if (!setDirty) draft = null; renderSet(); }
+    if (spTab === 'bank') loadBank();
+    if (spTab === 'pick') renderPick();
+    if (spTab === 'acc') { renderMe(); if (role === 'admin') loadAcc(); }
+    if (spTab === 'his') loadHis();
+  }
+  // phần cập nhật theo trạng thái trận khi trang cài đặt đang mở
+  function renderSpLive() { if (spTab === 'pick') renderPick(); }
+  $('#spNav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) showSp(b.dataset.sp); });
+  $('#spClose').addEventListener('click', closeSp);
+  $('#btnOpenPlayer2').addEventListener('click', openPlayer);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && spOpen && !$('#dlg').classList.contains('show')) closeSp(); });
+
+  /* ---------- màn hình cảm ứng (chế độ chọn ô) ---------- */
+  function renderPick() {
+    const S = ST(), d = priv.device, inter = S.pickMode === 'interactive';
+    const online = d.paired && priv.deviceSeen && (Date.now() - priv.deviceSeen < 20000);
+    let h = '<div class="ch"><b>' + tt('Ai bấm chọn ô?', 'Who picks the tiles?') + '</b></div><div class="row">';
+    h += '<button class="btn ' + (!inter ? 'btn-primary' : 'btn-ghost') + '" data-pk="present">' + tt('MC bấm ô trên trang MC', 'The host clicks tiles') + '</button>';
+    h += '<button class="btn ' + (inter ? 'btn-primary' : 'btn-ghost') + '" data-pk="interactive">' + tt('Người chơi chạm màn hình cảm ứng', 'Players touch a touch screen') + '</button></div>';
+    if (inter) {
+      h += '<div class="row"><span class="pill ' + (online ? '' : d.paired ? 'poll' : 'off') + '"><i></i>' + (d.paired ? (online ? tt('Màn hình cảm ứng đang kết nối', 'Touch screen connected') : tt('Đã ghép nối, chưa thấy tín hiệu', 'Paired, no signal yet')) : tt('Chưa ghép nối màn hình cảm ứng', 'No touch screen paired')) + '</span></div>';
+      h += '<div class="row"><button class="btn btn-primary" data-pk="code">' + (d.paired ? tt('Ghép màn hình khác', 'Pair another screen') : tt('Tạo mã ghép nối', 'Create pairing code')) + '</button><button class="btn btn-danger" data-pk="unpair"' + (d.paired ? '' : ' disabled') + '>' + tt('Hủy ghép nối', 'Unpair') + '</button></div>';
+      h += '<p class="note">' + tt('Trên màn hình cảm ứng: mở trang chủ, bấm biểu tượng bàn tay ở góc trên, nhập mã 6 số. Chỉ màn hình đã ghép nối mới chọn được ô, và chỉ khi MC đã chấm Đúng. Các màn hình khác chỉ xem. MC vẫn bấm ô trên trang MC được.', 'On the touch screen: open the home page, press the hand icon at the top, enter the 6-digit code. Only the paired screen can pick, and only after the host marks Correct. Other screens are view-only. The host can still click tiles.') + '</p>';
+    } else h += '<p class="note">' + tt('Người chơi đọc số ô, MC bấm ô đó trên bảng của trang MC. Màn hình trình chiếu lật ô ngay.', 'Players call a tile number and the host clicks it on the host page board. The projection screen flips it instantly.') + '</p>';
+    put($('#pickV'), h);
+  }
+  $('#pickV').addEventListener('click', async e => {
+    const b = e.target.closest('[data-pk]'); if (!b || b.disabled) return;
+    const k = b.dataset.pk;
+    if (k === 'present' || k === 'interactive') { await saveSettings({ pickMode: k }, true); renderPick(); return; }
+    if (k === 'code') return pairDlg();
+    if (k === 'unpair' && await confirmBox(tt('Hủy ghép nối?', 'Unpair?'), tt('Màn hình cảm ứng hiện tại sẽ không chọn ô được nữa.', 'The current touch screen will no longer be able to pick tiles.'), tt('Hủy ghép nối', 'Unpair'), true)) act('unpair');
+  });
   async function pairDlg() {
     const r = await act('pairCode'); if (!r || !r.code) return;
     await dialog(tt('Mã ghép nối màn hình cảm ứng', 'Touch screen pairing code'), '<div class="code6">' + esc(r.code) + '</div><p class="note">' + tt('Nhập mã này trên màn hình cảm ứng (biểu tượng bàn tay ở góc trên). Mã dùng được 10 phút. Ghép màn hình mới sẽ thay thế màn hình cũ.', 'Enter this code on the touch screen (hand icon at the top). Valid for 10 minutes. Pairing a new screen replaces the old one.') + '</p>', [{ label: tt('Xong', 'Done'), cls: 'btn-primary', value: true }]);
   }
+
+  /* ---------- tài khoản của tôi ---------- */
+  function renderMe() {
+    $('#meV').innerHTML = '<div class="ch"><b>' + tt('Tài khoản đang dùng', 'Signed in as') + '</b></div><div class="row"><span style="font-size:17px;font-weight:800">' + esc(user && user.email || '') + '</span><span class="role">' + (role === 'admin' ? 'ADMIN' : 'MC') + '</span><span style="flex:1"></span><button class="btn btn-ghost" data-me="logout">' + tt('Đăng xuất', 'Sign out') + '</button></div>';
+  }
+  $('#meV').addEventListener('click', e => { if (e.target.closest('[data-me="logout"]')) logout(); });
 
   /* ---------- cài đặt ---------- */
   async function saveSettings(obj, quiet) {
@@ -515,13 +527,17 @@
     h += '<label><span>' + tt('Âm lượng nhạc nền', 'Music volume') + '</span><input type="range" min="0" max="1" step="0.05" data-r="musicVol" value="' + D.musicVol + '"></label>';
     h += '<label class="chk"><input type="checkbox" data-b="musicLoop"' + (D.musicLoop ? ' checked' : '') + '>' + tt('Lặp lại nhạc nền', 'Loop music') + '</label>';
     h += '<div class="fld"><span>' + tt('Nhạc chiến thắng', 'Victory music') + '</span><div class="muted">' + esc(D.fanfareName || (D.fanfareUrl ? tt('Đã có nhạc', 'Music set') : tt('Dùng nhạc có sẵn', 'Built-in fanfare'))) + '</div><button class="btn btn-ghost sm" data-up="fanfareUrl" data-kind="audio">' + tt('Tải nhạc', 'Upload') + '</button> <button class="btn btn-ghost sm" data-clear="fanfareUrl">' + tt('Xóa', 'Remove') + '</button></div></div>';
+    const SD = D.sounds || {};
+    h += '<div class="sec">' + tt('Âm thanh hiệu ứng', 'Sound effects') + '</div><p class="note">' + tt('Chọn tiếng cho từng lúc trong trận. Bấm ▶ để nghe thử trên máy này. Nếu đã tải “Nhạc chiến thắng” ở trên thì nhạc đó được dùng khi chúc mừng.', 'Pick a sound for each moment. Press ▶ to preview on this device. An uploaded victory music replaces the celebration sound.') + '</p><div class="sgrid">';
+    h += TM.SOUNDS.map(([k, vi, en, opts]) => { const cur = SD[k] || opts[0][0]; return '<label><span>' + (TM.lang === 'en' ? en : vi) + '</span><div class="row" style="margin:0;flex-wrap:nowrap"><select class="inp" data-snd="' + k + '">' + opts.map(o => '<option value="' + o[0] + '"' + (cur === o[0] ? ' selected' : '') + '>' + esc(TM.lang === 'en' ? o[2] : o[1]) + '</option>').join('') + '<option value="off"' + (cur === 'off' ? ' selected' : '') + '>' + tt('Tắt tiếng', 'Silent') + '</option></select><button class="btn btn-ghost" type="button" data-try="' + k + '" title="' + tt('Nghe thử', 'Preview') + '">▶</button></div></label>'; }).join('') + '</div>';
     h += '<div class="sec">' + tt('Khác', 'Other') + '</div><div class="sgrid">';
     h += '<label class="chk"><input type="checkbox" data-b="motion"' + (D.motion ? ' checked' : '') + '>' + tt('Hiệu ứng chuyển động & pháo hoa', 'Motion & fireworks') + '</label>';
     h += '<label class="chk"><input type="checkbox" data-b="shuffleQ"' + (D.shuffleQ ? ' checked' : '') + '>' + tt('Xáo trộn thứ tự câu hỏi khi tạo trận mới', 'Shuffle question order for new matches') + '</label>';
-    h += '<label><span>' + tt('Chế độ chọn ô', 'Pick mode') + '</span><select class="inp" data-k="pickMode"><option value="present"' + (D.pickMode !== 'interactive' ? ' selected' : '') + '>' + tt('Trình chiếu (MC chọn ô)', 'Presentation (host picks)') + '</option><option value="interactive"' + (D.pickMode === 'interactive' ? ' selected' : '') + '>' + tt('Tương tác (người chơi chạm)', 'Interactive (players touch)') + '</option></select></label></div>';
+    h += '</div>';
     h += '<div class="sticky-save"><span class="muted" id="setMsg">' + (setDirty ? tt('Có thay đổi chưa lưu', 'Unsaved changes') : '') + '</span><button class="btn btn-ghost" id="setReset">' + tt('Hoàn tác', 'Discard') + '</button><button class="btn btn-primary" id="setSave">' + tt('Lưu cài đặt', 'Save settings') + '</button></div>';
     $('#setForm').innerHTML = h;
   }
+  const tryPlayer = new TM.Sfx();
   function markDirty() { setDirty = true; const m = $('#setMsg'); if (m) m.textContent = tt('Có thay đổi chưa lưu', 'Unsaved changes'); }
   $('#setForm').addEventListener('input', e => {
     const t = e.target, D = draft; if (!D) return;
@@ -532,11 +548,13 @@
     else if (t.dataset.b) D[t.dataset.b] = t.checked;
     else if (t.dataset.r) D[t.dataset.r] = Number(t.value);
     else if (t.dataset.slot) { const [arr, i] = t.dataset.slot.split(':'); D[arr][+i] = +t.value; }
+    else if (t.dataset.snd) { D.sounds = Object.assign({}, D.sounds || {}); D.sounds[t.dataset.snd] = t.value; }
     else return;
     markDirty();
   });
   $('#setForm').addEventListener('click', async e => {
     const t = e.target.closest('button'); if (!t || !draft) return;
+    if (t.dataset.try) { const id = (draft.sounds || {})[t.dataset.try] || ($('[data-snd="' + t.dataset.try + '"]') || {}).value; tryPlayer.unlock(); tryPlayer.vol = draft.sfxVol == null ? 0.8 : draft.sfxVol; if (id && id !== 'off') setTimeout(() => tryPlayer.play(id), 60); return; }
     if (t.id === 'setSave') { const ok = await saveSettings(draft); if (ok) { draft = null; setDirty = false; renderSet(); } return; }
     if (t.id === 'setReset') { draft = null; setDirty = false; renderSet(); return; }
     if (t.dataset.clear) { const k = t.dataset.clear; if (k.startsWith('shoe:')) draft.shoes[+k.slice(5)] = ''; else { draft[k] = ''; if (k === 'musicUrl') draft.musicName = ''; if (k === 'fanfareUrl') draft.fanfareName = ''; } markDirty(); renderSet(); return; }
@@ -579,7 +597,7 @@
     if (!bank) { $('#bankV').innerHTML = '<p class="muted">' + tt('Đang tải…', 'Loading…') + '</p>'; return; }
     const G2 = GRP(), f = bankFilter, s = f.q.trim().toLowerCase();
     const list = bank.filter(q => (!f.grp || q.grp === f.grp) && (!s || [q.id, q.q_vi, q.q_en, q.a_vi, q.a_en, q.num].join(' ').toLowerCase().includes(s)));
-    let h = '<div class="ch"><b>' + tt('Ngân hàng câu hỏi', 'Question Bank') + '</b><span class="sp"></span>' + (canEdit ? '' : '<span class="muted">' + tt('Chỉ Admin được thêm/sửa/xóa. MC chọn câu hỏi trong tab Điều khiển.', 'Only an admin can edit. Hosts pick questions in Controls.') + '</span>') + '</div>';
+    let h = '<div class="ch"><b>' + tt('Ngân hàng câu hỏi', 'Question Bank') + '</b><span class="sp"></span>' + (canEdit ? '' : '<span class="muted">' + tt('Chỉ Admin được thêm/sửa/xóa. MC chọn câu hỏi ngay trên màn hình chơi.', 'Only an admin can edit. Hosts pick questions on the game screen.') + '</span>') + '</div>';
     h += '<div class="bankbar"><input class="inp" id="bkQ" placeholder="' + tt('Tìm theo mã, nội dung, đáp án…', 'Search id, text, answer…') + '" value="' + esc(f.q) + '" style="min-width:260px"><select class="inp" id="bkG"><option value="">' + tt('Tất cả nhóm', 'All groups') + '</option>' + Object.keys(G2).map(k => '<option value="' + k + '"' + (f.grp === k ? ' selected' : '') + '>' + G2[k] + '</option>').join('') + '</select><span class="sp" style="flex:1"></span>';
     if (canEdit) h += '<button class="btn btn-primary" data-bk="add">+ ' + tt('Thêm câu hỏi', 'Add question') + '</button><button class="btn btn-ghost" data-bk="import">' + tt('Nhập JSON', 'Import JSON') + '</button>';
     h += '<button class="btn btn-ghost" data-bk="export">' + tt('Xuất JSON', 'Export JSON') + '</button></div>';

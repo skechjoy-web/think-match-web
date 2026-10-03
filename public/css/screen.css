@@ -1,0 +1,141 @@
+/* Màn hình chơi dùng chung cho trang MC và màn hình trình chiếu (16:9).
+   Bảng ô bên trái; bên phải là khung thông báo (trình chiếu) hoặc bảng điều khiển MC (trang MC), cùng vị trí và kích thước. */
+.col{left:36px;top:112px;width:1240px;height:948px}
+.teambar{gap:20px}
+.tcard{padding:0 22px 0 32px}
+.tcard .nm b{font-size:36px}
+.tcard .sc{font-size:84px}
+.tbox{width:300px}
+.board.main{width:1240px;height:694px}
+.board.small{left:160px;top:22px;width:920px;height:650px}
+.est{width:1240px}
+
+.side{position:absolute;left:1300px;top:112px;width:584px;height:948px}
+.msgp{border-radius:24px;background:linear-gradient(165deg,rgba(14,44,110,.92),rgba(5,16,46,.95));border:2px solid rgba(120,200,255,.35);box-shadow:0 20px 60px rgba(0,0,0,.45);padding:34px 34px 30px;display:flex;flex-direction:column;gap:20px;overflow:hidden}
+.msgp .tag{align-self:flex-start;font-size:22px;font-weight:900;letter-spacing:.18em;color:var(--cyan);padding:6px 18px;border-radius:40px;border:2px solid var(--cyan)}
+.msgp .tag.gold{color:var(--gold);border-color:var(--gold)}
+.msgp .qt{font-size:44px;font-weight:800;line-height:1.28;overflow-wrap:anywhere}
+.msgp .qt.sm{font-size:32px;color:#d9eeff}
+.msgp .big{font-size:64px;font-weight:900;font-style:italic;line-height:1.12;overflow-wrap:anywhere}
+.msgp .big .tn{color:var(--tc,#fff)}
+.msgp .sub{font-size:28px;font-weight:700;color:#bfe3ff;line-height:1.35}
+.msgp .grow{flex:1;min-height:0}
+.msgp .ans{border-radius:20px;padding:20px 24px;font-size:38px;font-weight:900;line-height:1.25;overflow-wrap:anywhere;background:rgba(255,200,61,.12);border:2px solid rgba(255,200,61,.6);color:#ffe7a3;animation:fadeup .35s ease-out}
+.msgp .ans.ok{background:rgba(25,195,125,.18);border-color:#2ee59d;color:#5dffb7;box-shadow:0 0 40px rgba(46,229,157,.25)}
+.msgp .ans.no{background:rgba(255,77,94,.14);border-color:rgba(255,133,146,.8);color:#ffd0d5}
+.msgp .ans .h{display:block;font-size:44px}
+.msgp .ans.no .h{color:#ff8592}
+.msgp .call{border-radius:20px;padding:22px 24px;font-size:44px;font-weight:900;font-style:italic;line-height:1.15;text-align:center;background:linear-gradient(90deg,rgba(255,200,61,.22),rgba(255,159,26,.18));border:2px solid var(--gold);color:#fff3c4;animation:fadeup .35s ease-out}
+.msgp .call small{display:block;font-size:24px;font-style:normal;font-weight:800;color:#ffe7a3;margin-top:8px}
+.msgp .res{border-radius:20px;padding:20px 24px;font-size:42px;font-weight:900;text-align:center;animation:fadeup .3s ease-out}
+.msgp .res.ok{background:rgba(255,200,61,.2);border:2px solid var(--gold);color:var(--gold)}
+.msgp .res.no{background:rgba(255,77,94,.16);border:2px solid rgba(255,133,146,.7);color:#ff8592}
+.msgp .res small{display:block;font-size:24px;font-weight:800;color:#e8f6ff;margin-top:6px}
+.msgp .next{font-size:26px;font-weight:800;color:var(--muted)}
+
+/* trạng thái kết nối và ghép nối */
+.conn{position:absolute;right:18px;bottom:12px;z-index:40;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:#9fcaf0;background:rgba(3,10,31,.6);padding:5px 12px;border-radius:20px;pointer-events:none}
+.conn i{width:10px;height:10px;border-radius:50%;background:#2ee59d}
+.conn.poll i{background:var(--gold)}
+.conn.off{color:#ffb3bb;font-size:22px;padding:10px 18px;border:2px solid var(--red)}
+.conn.off i{background:var(--red);width:14px;height:14px}
+.conn .t{display:none}
+.conn.off .t,.conn.dev .t{display:inline}
+.locked .board.pickable .tile{pointer-events:none}
+.locked .board .cover{opacity:1}
+.h-tools .iconbtn{opacity:.75}
+.h-tools .iconbtn:hover{opacity:1}
+.audiohint{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:45;font-size:20px;font-weight:800;background:rgba(8,24,70,.95);border:1.5px solid rgba(160,210,255,.45);padding:10px 22px;border-radius:30px;cursor:pointer;display:none}
+.audiohint.show{display:block}
+.pauseov .sub{font-size:30px;font-weight:700;color:#cfeeff}
+.welcome-note{position:absolute;left:0;right:0;bottom:70px;text-align:center;font-size:30px;font-weight:800;color:#bfe3ff}
+#pairM .modal{width:640px;padding:36px 40px;text-align:center}
+#pairM p{font-size:20px;color:#cfe6ff;margin:12px 0 18px;line-height:1.4}
+#pairM .code{font-size:64px;font-weight:900;letter-spacing:.3em;height:90px;border-radius:16px;background:rgba(0,0,0,.3);border:2px solid rgba(160,210,255,.35);display:flex;align-items:center;justify-content:center}
+#pairM .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+#pairM .pad button{height:76px;border-radius:14px;background:rgba(255,255,255,.08);border:1.5px solid rgba(160,210,255,.35);font-size:34px;font-weight:900}
+#pairM .r{display:flex;gap:14px;justify-content:center}
+#pairM .r .btn{height:60px;padding:0 30px;font-size:22px}
+#pairM .err{color:#ff8592;font-weight:800;font-size:20px;min-height:28px}
+
+/* bảng điều khiển MC (chỉ trang MC) */
+.panel{left:1300px;width:584px;padding:20px 22px;gap:12px;overflow-y:auto;overflow-x:hidden;transition:none}
+.panel::-webkit-scrollbar{width:8px}
+.panel::-webkit-scrollbar-thumb{background:rgba(160,210,255,.3);border-radius:4px}
+.panel .p-head b{font-size:17px}
+.panel .p-head span{font-size:15px;font-weight:900;letter-spacing:.12em;color:var(--gold)}
+.panel .hint{font-size:21px;padding:12px 14px}
+.panel .warn{font-size:18px;font-weight:800;color:#ffb3bb;background:rgba(255,77,94,.12);border:1px solid rgba(255,77,94,.5);border-radius:12px;padding:8px 12px}
+.panel .sec{font-size:15px}
+.panel .qg button{height:46px;font-size:18px}
+.panel .qprev{min-height:96px;padding:12px 14px}
+.panel .qprev .k{font-size:14px;font-weight:900;letter-spacing:.1em;color:var(--cyan);display:flex;align-items:center;gap:8px}
+.panel .qprev .k i{font-style:normal;font-size:12px;padding:2px 9px;border-radius:12px;background:rgba(255,255,255,.12);color:#cfe}
+.panel .qprev .k i.on{background:#19c37d;color:#032}
+.panel .qprev .q{font-size:21px;-webkit-line-clamp:4}
+.panel .qprev .a{font-size:20px;color:var(--gold)}
+.panel .qprev .a small{font-size:14px;color:#ffe7a3;font-weight:700;margin-left:6px}
+.panel .row{flex-wrap:nowrap}
+.panel .row .btn{height:56px;font-size:19px}
+.panel .row.l .btn{height:84px;font-size:25px}
+.panel .row.xl .btn{height:92px;font-size:28px}
+.panel .row .btn.half{flex:.55}
+.panel .p-foot .row .btn{height:48px;font-size:16px}
+.panel .seg button{height:58px;font-size:20px}
+.panel .seg button:disabled{opacity:.4;cursor:not-allowed}
+.panel .mini-in{height:52px;font-size:21px}
+.panel textarea.mini-in{height:84px;padding:8px 10px;resize:none}
+.panel .flabel{font-size:16px}
+.panel .note-box{font-size:18px}
+.panel .ok-box{border-radius:14px;padding:14px 16px;font-size:24px;font-weight:900;line-height:1.3;text-align:center;background:linear-gradient(90deg,rgba(255,200,61,.2),rgba(255,159,26,.15));border:2px solid var(--gold);color:#fff3c4}
+.panel .ok-box small{display:block;font-size:17px;font-weight:700;color:#ffe7a3;margin-top:4px}
+.panel .small{font-size:15px;color:#9fcaf0;line-height:1.35}
+.panel .lnk{color:#ffb3bb;text-decoration:underline;font-weight:700;font-size:16px;text-align:left}
+.panel .clk{font-size:15px;font-weight:800;color:#bcd9f5;display:flex;justify-content:space-between}
+.panel .clk b{font-size:20px;color:#fff}
+.board.pickable .tile{cursor:pointer}
+.host .board.pickable .cell:hover .front{filter:brightness(1.25)}
+.w-note span{display:inline-block}
+.h-tools .lang button{font-size:16px}
+.host .pauseov{top:104px;border-radius:24px 24px 0 0}
+.panel .note-box{display:block}
+.panel .note-box b{display:inline}
+
+/* bảng số câu hỏi trên màn hình trình chiếu (để các đội chọn câu) */
+.pgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.pgrid.tie{grid-template-columns:repeat(5,1fr)}
+.pgrid i{font-style:normal;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;background:linear-gradient(180deg,rgba(58,149,255,.35),rgba(23,103,230,.28));border:2px solid rgba(160,210,255,.5);color:#fff;transition:all .3s}
+.pgrid i.bk{border-color:rgba(255,200,61,.6)}
+.pgrid i.lock{opacity:.35}
+.pgrid i.used{background:transparent;border-style:dashed;border-color:rgba(160,210,255,.22);color:rgba(255,255,255,.25);text-decoration:line-through}
+.pgrid i.sel{background:linear-gradient(180deg,#ffd76a,#ffb20f);border-color:#fff;color:#2a1a00;box-shadow:0 0 0 4px rgba(255,200,61,.35),0 0 30px rgba(255,200,61,.7);animation:selpulse 1.2s ease-in-out infinite}
+@keyframes selpulse{50%{transform:scale(1.08)}}
+.msgp .mbody{flex:1;min-height:0;display:flex;flex-direction:column;gap:16px}
+.msgp.hasgrid{gap:16px;padding:28px 30px 26px}
+.msgp.hasgrid .qt{font-size:36px}
+.msgp.hasgrid .qt.sm{font-size:26px}
+.msgp.hasgrid .big{font-size:50px}
+.msgp.hasgrid .ans{font-size:30px;padding:16px 20px}
+.msgp.hasgrid .ans .h{font-size:34px}
+.msgp.hasgrid .call{font-size:36px;padding:18px 20px}
+.msgp.hasgrid .res{font-size:34px;padding:16px 20px}
+.msgp.hasgrid .sub{font-size:24px}
+
+/* hiệu ứng lớp phủ: chọn câu, hiện câu hỏi, đúng, sai, hết giờ */
+.fxo{position:absolute;inset:0;z-index:35;pointer-events:none;overflow:hidden;perspective:1400px}
+.fxcard{position:absolute;left:50%;top:50%;width:1120px;transform:translate(-50%,-50%);border-radius:40px;padding:52px 64px 58px;text-align:center;background:linear-gradient(160deg,#2a6fe8,#0a2a78 70%);border:4px solid #9fd6ff;box-shadow:0 0 0 10px rgba(95,212,255,.22),0 0 120px rgba(63,182,255,.55),0 50px 140px rgba(0,0,0,.6);overflow:hidden}
+.fxcard::before{content:"";position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 70%,rgba(255,255,255,.18) 80%,transparent 90%);animation:spin 2.4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fxcard small{position:relative;display:inline-block;font-size:34px;font-weight:900;letter-spacing:.2em;color:var(--gold);border:3px solid var(--gold);border-radius:40px;padding:6px 28px;background:rgba(0,0,0,.25)}
+.fxcard b{position:relative;display:block;font-size:84px;font-weight:900;font-style:italic;margin-top:26px;line-height:1.12;overflow-wrap:anywhere}
+.fxcard b .tn{color:var(--tc,#fff);text-shadow:0 0 30px rgba(255,255,255,.35)}
+.fxcard.q b{font-style:normal;font-weight:800;line-height:1.25}
+.fxstamp{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-size:150px;font-weight:900;font-style:italic;white-space:nowrap;padding:10px 60px;border-radius:30px;border:8px solid currentColor;background:rgba(3,10,31,.72);display:flex;align-items:center;gap:30px;text-shadow:0 0 40px currentColor}
+.fxstamp.ok{color:#5dffb7}
+.fxstamp.no{color:#ff5d73}
+.fxstamp.to{color:#ffb020}
+.fxstamp.gold{color:var(--gold);font-size:110px}
+.fxstamp .xm{width:150px;height:150px;display:inline-block}
+.fxflash{position:absolute;inset:0;box-shadow:inset 0 0 260px 80px rgba(255,40,60,.75)}
+.fxflash.to{box-shadow:inset 0 0 260px 80px rgba(255,160,20,.7)}
+.fxstamp.no{font-size:128px}

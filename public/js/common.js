@@ -102,18 +102,51 @@
     this.ready = () => !!ac && ac.state === 'running';
     function tone(f, t0, d, type, vol, f2) { if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(); o.type = type || 'sine'; const t = ac.currentTime + t0; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.2, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g).connect(master); o.start(t); o.stop(t + d + 0.05); }
     function noise(t0, d, vol, hp) { if (!ac) return; const b = ac.createBuffer(1, Math.max(1, ac.sampleRate * d | 0), ac.sampleRate), x = b.getChannelData(0); for (let i = 0; i < x.length; i++) x[i] = (Math.random() * 2 - 1) * (1 - i / x.length); const s = ac.createBufferSource(); s.buffer = b; const g = ac.createGain(); g.gain.value = vol; const f = ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = hp || 1800; s.connect(f).connect(g).connect(master); s.start(ac.currentTime + t0); }
+    // Bộ âm thanh có sẵn: mỗi sự kiện có vài kiểu để chọn trong Cài đặt (TM.SOUNDS)
+    const P = {
+      whoosh() { noise(0, 0.45, 0.16, 600); tone(300, 0, 0.4, 'sine', 0.12, 1200); tone(1200, 0.35, 0.25, 'triangle', 0.1, 1600); },
+      drum() { for (let i = 0; i < 10; i++) noise(i * 0.06, 0.05, 0.05 + i * 0.012, 300); tone(110, 0.62, 0.35, 'sine', 0.3, 60); noise(0.62, 0.3, 0.14, 2500); },
+      chime() { [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, i * 0.07, 0.5, 'sine', 0.12)); },
+      reveal() { [784, 988, 1175].forEach((f, i) => tone(f, i * 0.07, 0.22, 'triangle', 0.12)); },
+      harp() { [523, 659, 784, 988, 1175, 1319, 1568].forEach((f, i) => tone(f, i * 0.045, 0.6, 'triangle', 0.09)); },
+      gong() { tone(130, 0, 2.2, 'sine', 0.3, 120); tone(196, 0, 1.8, 'sine', 0.14); tone(262, 0.02, 1.4, 'triangle', 0.07); noise(0, 0.5, 0.06, 900); },
+      bell() { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.09, 0.4, 'triangle', 0.18)); tone(2093, 0.36, 0.8, 'sine', 0.08); },
+      arpeggio() { [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => tone(f, i * 0.06, 0.3, 'square', 0.06)); [1047, 1319, 1568].forEach(f => tone(f, 0.45, 0.8, 'triangle', 0.1)); },
+      coin() { tone(988, 0, 0.08, 'square', 0.1); tone(1319, 0.08, 0.5, 'square', 0.1); tone(1976, 0.2, 0.4, 'triangle', 0.06); },
+      buzzer() { tone(196, 0, 0.28, 'sawtooth', 0.12, 150); tone(147, 0.25, 0.4, 'sawtooth', 0.12, 110); },
+      trombone() { [[392, 0], [370, 0.32], [349, 0.64]].forEach(([f, t]) => tone(f, t, 0.3, 'sawtooth', 0.1, f * 0.97)); tone(330, 0.96, 0.9, 'sawtooth', 0.11, 290); },
+      thud() { tone(90, 0, 0.5, 'sine', 0.35, 45); noise(0, 0.2, 0.12, 200); tone(220, 0.05, 0.3, 'square', 0.05, 160); },
+      alarm() { for (let i = 0; i < 3; i++) { tone(880, i * 0.3, 0.14, 'square', 0.09); tone(660, i * 0.3 + 0.15, 0.14, 'square', 0.09); } },
+      beeps() { tone(440, 0, 0.22, 'square', 0.1); tone(330, 0.24, 0.22, 'square', 0.1); tone(220, 0.48, 0.5, 'sawtooth', 0.12, 180); },
+      sparkle() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.08, 0.3, 'square', 0.07)); [1047, 1319, 1568].forEach(f => tone(f, 0.45, 0.7, 'triangle', 0.12)); noise(0.4, 0.35, 0.06); },
+      jingle() { [1568, 1319, 1568, 2093].forEach((f, i) => tone(f, i * 0.1, 0.25, 'triangle', 0.12)); for (let i = 0; i < 6; i++) noise(i * 0.08, 0.05, 0.05, 5000); },
+      fanfare() {
+        [[523, 0, 0.18], [523, 0.2, 0.18], [523, 0.4, 0.18], [659, 0.6, 0.5], [587, 1.15, 0.2], [659, 1.35, 0.2], [784, 1.55, 1.2]].forEach(([f, s, d]) => { tone(f, s, d + 0.1, 'sawtooth', 0.09); tone(f * 2, s, d + 0.1, 'triangle', 0.07); });
+        [523, 659, 784, 1047].forEach(f => tone(f, 1.55, 1.6, 'triangle', 0.08)); noise(1.5, 0.8, 0.07);
+      },
+      victory() {
+        [[392, 0], [523, 0.15], [659, 0.3], [784, 0.45], [659, 0.75], [784, 0.9]].forEach(([f, t]) => { tone(f, t, 0.25, 'square', 0.07); tone(f / 2, t, 0.25, 'triangle', 0.08); });
+        [523, 659, 784, 1047, 1319].forEach(f => tone(f, 1.1, 1.8, 'triangle', 0.07)); for (let i = 0; i < 8; i++) noise(1.1 + i * 0.12, 0.08, 0.05, 4000);
+      },
+      march() {
+        [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75].forEach(t => noise(t, 0.08, 0.1, 400));
+        [[523, 0], [523, 0.25], [659, 0.5], [784, 0.75], [1047, 1], [784, 1.25], [1047, 1.5]].forEach(([f, t]) => { tone(f, t, 0.22, 'sawtooth', 0.07); tone(f * 1.5, t, 0.22, 'triangle', 0.05); });
+        [1047, 1319, 1568].forEach(f => tone(f, 1.75, 1.4, 'triangle', 0.08));
+      },
+    };
+    this.map = {};
+    const MAPPED = { qpick: 'whoosh', qopen: 'reveal', right: 'bell', wrong: 'buzzer', timeout: 'beeps', over: 'beeps', match: 'sparkle' };
+    // n: tên sự kiện (dùng kiểu đã chọn) hoặc tên kiểu âm thanh (nghe thử)
     this.play = function (n) {
       if (!self.on || !ac) return; master.gain.value = self.vol;
+      if (MAPPED[n]) { const id = self.map[n === 'over' ? 'timeout' : n] || MAPPED[n]; if (id !== 'off' && P[id]) P[id](); return; }
+      if (P[n]) return P[n]();
       switch (n) {
         case 'click': tone(880, 0, 0.06, 'triangle', 0.07); break;
         case 'flip': noise(0, 0.12, 0.12); tone(520, 0, 0.12, 'triangle', 0.08, 780); break;
         case 'tick': tone(1320, 0, 0.09, 'sine', 0.16); break;
-        case 'right': case 'start': [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.09, 0.25, 'triangle', 0.18)); break;
-        case 'qopen': [660, 880].forEach((f, i) => tone(f, i * 0.08, 0.18, 'triangle', 0.12)); break;
-        case 'reveal': [784, 988, 1175].forEach((f, i) => tone(f, i * 0.07, 0.22, 'triangle', 0.12)); break;
-        case 'wrong': tone(196, 0, 0.28, 'sawtooth', 0.12, 150); tone(147, 0.25, 0.4, 'sawtooth', 0.12, 110); break;
-        case 'timeout': case 'over': tone(440, 0, 0.22, 'square', 0.1); tone(330, 0.24, 0.22, 'square', 0.1); tone(220, 0.48, 0.5, 'sawtooth', 0.12, 180); break;
-        case 'match': [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.08, 0.3, 'square', 0.07)); [1047, 1319, 1568].forEach(f => tone(f, 0.45, 0.7, 'triangle', 0.12)); noise(0.4, 0.35, 0.06); break;
+        case 'start': P.bell(); break;
+        case 'reveal': P.reveal(); break;
         case 'miss': tone(330, 0, 0.18, 'square', 0.07); tone(247, 0.18, 0.32, 'square', 0.07); break;
         case 'boom': noise(0, 0.6, 0.25, 200); tone(90, 0, 0.5, 'sine', 0.25, 40); break;
         case 'shuffle': for (let i = 0; i < 6; i++) noise(i * 0.07, 0.06, 0.08); break;
@@ -121,10 +154,19 @@
     };
     this.fanfare = function () {
       if (!self.on || !ac) return; const now = performance.now(); if (now < fanUntil) return; fanUntil = now + 3600; master.gain.value = self.vol;
-      [[523, 0, 0.18], [523, 0.2, 0.18], [523, 0.4, 0.18], [659, 0.6, 0.5], [587, 1.15, 0.2], [659, 1.35, 0.2], [784, 1.55, 1.2]].forEach(([f, s, d]) => { tone(f, s, d + 0.1, 'sawtooth', 0.09); tone(f * 2, s, d + 0.1, 'triangle', 0.07); });
-      [523, 659, 784, 1047].forEach(f => tone(f, 1.55, 1.6, 'triangle', 0.08)); noise(1.5, 0.8, 0.07);
+      const id = self.map.win || 'fanfare'; if (id !== 'off' && P[id]) P[id]();
     };
   };
+  // Danh sách để chọn trong Cài đặt (khớp với SOUND_OPTS trên máy chủ)
+  TM.SOUNDS = [
+    ['qpick', 'Chọn câu hỏi', 'Question picked', [['whoosh', 'Vút bay ra', 'Whoosh'], ['drum', 'Trống dồn', 'Drum roll'], ['chime', 'Chuông ngân', 'Chime']]],
+    ['qopen', 'Hiện câu hỏi', 'Question shown', [['reveal', 'Lấp lánh', 'Sparkle'], ['harp', 'Đàn hạc', 'Harp'], ['gong', 'Cồng', 'Gong']]],
+    ['right', 'Trả lời đúng', 'Correct answer', [['bell', 'Chuông vui', 'Happy bell'], ['arpeggio', 'Nhạc thắng', 'Winner arpeggio'], ['coin', 'Đồng xu', 'Coin']]],
+    ['wrong', 'Trả lời sai', 'Wrong answer', [['buzzer', 'Còi báo sai', 'Buzzer'], ['trombone', 'Kèn tiếc nuối', 'Sad trombone'], ['thud', 'Tiếng rơi', 'Thud']]],
+    ['timeout', 'Hết giờ', 'Time up', [['alarm', 'Chuông báo', 'Alarm'], ['beeps', 'Tít tít', 'Beeps']]],
+    ['match', 'Lật trúng cặp', 'Pair found', [['sparkle', 'Pháo sáng', 'Sparkle'], ['jingle', 'Leng keng', 'Jingle']]],
+    ['win', 'Chúc mừng đội thắng', 'Winner celebration', [['fanfare', 'Kèn chiến thắng', 'Fanfare'], ['victory', 'Khúc khải hoàn', 'Victory'], ['march', 'Hành khúc', 'March']]],
+  ];
 
   /* ================= pháo hoa ================= */
   TM.makeFx = function (cv, isPaused, onBoom) {
