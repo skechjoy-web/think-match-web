@@ -466,10 +466,11 @@
     }
     let bannerT = 0, bannerT2 = 0;
     const BIC = {
-      ok: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
-      no: '<svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>',
-      to: '<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4.5l3 2M9.5 2.5h5"/></svg>',
-      win: '<svg viewBox="0 0 24 24"><path d="M12 3.2l2.6 5.5 6 .8-4.4 4.1 1.1 5.9L12 16.6l-5.3 2.9 1.1-5.9-4.4-4.1 6-.8z"/></svg>',
+      // mặt cười tươi (đúng), mặt buồn rơi nước mắt (sai), mặt lo lắng (hết giờ), mặt mắt sao (ghép đúng)
+      ok: '<svg viewBox="0 0 24 24" class="face"><path d="M5.6 9.4q1.9-2.4 3.8 0M14.6 9.4q1.9-2.4 3.8 0"/><path class="fill" d="M5.2 12.6h13.6q-.7 7-6.8 7t-6.8-7z"/><path class="tongue" d="M9.4 17.6q2.6-2 5.2 0q-1.2 1.4-2.6 1.4t-2.6-1.4z"/></svg>',
+      no: '<svg viewBox="0 0 24 24" class="face"><path d="M5.4 8.4l3.6-1.4M18.6 8.4l-3.6-1.4"/><circle class="fill" cx="8" cy="11" r="1.5"/><circle class="fill" cx="16" cy="11" r="1.5"/><path d="M7.4 18.4q4.6-4.6 9.2 0"/><path class="tear" d="M6.6 13.6q-1.8 2.8 0 3.8 1.8-1 0-3.8z"/></svg>',
+      to: '<svg viewBox="0 0 24 24" class="face"><path d="M5.6 7.6l3.2.9M18.4 7.6l-3.2.9"/><circle class="fill" cx="8" cy="11" r="2"/><circle class="fill" cx="16" cy="11" r="2"/><ellipse class="fill" cx="12" cy="17" rx="2.4" ry="2.9"/></svg>',
+      win: '<svg viewBox="0 0 24 24" class="face"><path class="fill" d="M7.6 5.2l1.2 2.5 2.7.4-2 1.9.5 2.7-2.4-1.3-2.4 1.3.5-2.7-2-1.9 2.7-.4zM16.4 5.2l1.2 2.5 2.7.4-2 1.9.5 2.7-2.4-1.3-2.4 1.3.5-2.7-2-1.9 2.7-.4z"/><path class="fill" d="M5 13.6h14q-.7 6.4-7 6.4t-7-6.4z"/><path class="tongue" d="M9.2 18.2q2.8-2 5.6 0q-1.2 1.6-2.8 1.6t-2.8-1.6z"/></svg>',
       info: '<svg viewBox="0 0 24 24"><path d="M12 3v18M5 7h14M7 7l-3 7h6zM17 7l-3 7h6z"/></svg>',
     };
     // Dải thông báo: trượt vào từ trái (nền chéo, biểu tượng bật ra, chữ hiện dần, vệt sáng quét qua), rồi trượt ra bên phải
