@@ -154,19 +154,6 @@ svg.ic{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.2;str
 .small-cap{position:absolute;left:0;right:0;top:690px;text-align:center;font-size:22px;font-weight:800;color:var(--muted)}
 
 /* banners */
-.banner{position:absolute;left:0;right:0;height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;opacity:0;transform:scaleY(.2);transition:opacity .3s,transform .35s cubic-bezier(.2,1.4,.4,1);z-index:8;border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.55)}
-.banner.show{opacity:1;transform:scaleY(1)}
-.banner .b1{font-size:84px;font-weight:900;font-style:italic;line-height:1}
-.banner .b2{font-size:34px;font-weight:800;margin-top:10px}
-.banner.ok{background:linear-gradient(90deg,rgba(6,60,45,.97),rgba(9,90,66,.97) 50%,rgba(6,60,45,.97));border:2px solid rgba(93,255,183,.6)}
-.banner.ok .b1{color:#5dffb7}
-.banner.no{background:linear-gradient(90deg,rgba(80,6,20,.97),rgba(120,12,30,.97) 50%,rgba(80,6,20,.97));border:2px solid rgba(255,133,146,.6)}
-.banner.no .b1{color:#ff8592}
-.banner.win{background:linear-gradient(90deg,rgba(40,24,0,.96),rgba(80,50,0,.96) 50%,rgba(40,24,0,.96));border:2px solid rgba(255,200,61,.75)}
-.banner.win .b1{background:linear-gradient(180deg,#fff5c4,#ffc83d 55%,#ff9f1a);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:100px}
-.banner.win .b2{color:#ffe7a3}
-.banner.info{background:linear-gradient(90deg,rgba(8,30,80,.97),rgba(14,50,130,.97) 50%,rgba(8,30,80,.97));border:2px solid rgba(160,220,255,.6)}
-.banner.info .b1{color:#bfe8ff}
 /* big question & estimate */
 .qbig{position:absolute;left:0;top:0;width:1388px;height:744px;z-index:6;border-radius:22px;background:linear-gradient(160deg,rgba(14,44,110,.98),rgba(5,16,46,.99));border:2px solid rgba(120,200,255,.45);box-shadow:0 30px 80px rgba(0,0,0,.6);display:none;flex-direction:column;align-items:center;justify-content:center;padding:60px 90px;text-align:center}
 .qbig.show{display:flex;animation:fadeup .35s ease-out}

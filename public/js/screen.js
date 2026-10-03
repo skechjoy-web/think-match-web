@@ -58,7 +58,7 @@
           '<div class="barea" id="barea"><div class="board main" id="board"></div><div class="pairs" id="pairs"></div><div class="small-cap" id="smallCap"></div><div class="est" id="est" style="display:none"></div>' +
             // câu hỏi lớn phủ lên bảng ô trong lúc trả lời; đáp án hiện ngay bên dưới khi được công bố
             '<div class="qbig" id="qbig"><div class="ql"><span id="qbNo"></span></div><div class="qt" id="qbText"></div><div class="qa" id="qbAns"></div></div>' +
-            '<div class="banner" id="banner"><div class="b1"></div><div class="b2"></div></div>' +
+            '<div class="banner" id="banner"><div class="bg"><i class="shine"></i></div><div class="bic"></div><div class="btx"><div class="b1"></div><div class="b2"></div></div></div>' +
           '</div>' +
         '</div>' +
         (host ? '<aside class="side panel" id="panel"></aside>' : '<aside class="side msgp" id="msgp"></aside>') +
@@ -440,7 +440,7 @@
         if (motion) { fx.burst(700, 520, 70); fx.burst(1220, 520, 70); }
       } else if (type === 'wrong' || type === 'timeout') {
         const flipOut = (m.k === 'main' || m.k === 'tie' || prac) && m.phase === 'resolve';
-        banner('no', type === 'timeout' ? (flipOut ? tt('HẾT GIỜ LẬT Ô', 'FLIP TIME IS UP') : tt('HẾT GIỜ!', 'TIME’S UP!')) : tt('CHƯA CHÍNH XÁC', 'INCORRECT'), flipOut ? tt('Không cộng điểm', 'No points') : turnLine(m), 2100);
+        banner(type === 'timeout' ? 'to' : 'no', type === 'timeout' ? (flipOut ? tt('HẾT GIỜ LẬT Ô', 'FLIP TIME IS UP') : tt('HẾT GIỜ!', 'TIME’S UP!')) : tt('CHƯA CHÍNH XÁC', 'INCORRECT'), flipOut ? tt('Không cộng điểm', 'No points') : turnLine(m), 2100);
       } else if (type === 'match' && pub.board) {
         const open = pub.board.tiles.map((t, i) => (t.s === 'o' && t.w ? i : -1)).filter(i => i >= 0);
         if (motion) open.forEach(i => { const c = board.cellRect(i); if (c) { const pt = stagePoint(c); fx.burst(pt.x, pt.y, 80); } });
@@ -464,10 +464,19 @@
       if (m.k === 'tie' && m.cur && m.wrongTeam != null) return m.answering != null ? fmt(tt('{t} được quyền trả lời', '{t} may answer now'), { t: teamName(m.answering) }) : tt('Đội khác giành quyền trả lời', 'Another team may buzz in');
       return '';
     }
-    let bannerT = 0;
+    let bannerT = 0, bannerT2 = 0;
+    const BIC = {
+      ok: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+      no: '<svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>',
+      to: '<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4.5l3 2M9.5 2.5h5"/></svg>',
+      win: '<svg viewBox="0 0 24 24"><path d="M12 3.2l2.6 5.5 6 .8-4.4 4.1 1.1 5.9L12 16.6l-5.3 2.9 1.1-5.9-4.4-4.1 6-.8z"/></svg>',
+      info: '<svg viewBox="0 0 24 24"><path d="M12 3v18M5 7h14M7 7l-3 7h6zM17 7l-3 7h6z"/></svg>',
+    };
+    // Dải thông báo: trượt vào từ trái (nền chéo, biểu tượng bật ra, chữ hiện dần, vệt sáng quét qua), rồi trượt ra bên phải
     function banner(kind, l1, l2, ms, tile) {
-      const b = $('#banner'); clearTimeout(bannerT);
+      const b = $('#banner'); clearTimeout(bannerT); clearTimeout(bannerT2);
       b.className = 'banner ' + kind; b.querySelector('.b1').textContent = l1;
+      b.querySelector('.bic').innerHTML = BIC[kind] || '';
       const s2 = b.querySelector('.b2'); s2.textContent = l2 || ''; s2.style.display = l2 ? 'block' : 'none';
       // đặt dải thông báo sát hàng ô vừa lật (bên dưới, hết chỗ thì bên trên) để vẫn thấy hai hình; không có ô thì giữa bảng
       let top = 694 / 2 - 85;
@@ -479,7 +488,7 @@
       }
       b.style.top = Math.max(0, Math.min(694 - 170, top)) + 'px';
       void b.offsetWidth; b.classList.add('show');
-      bannerT = setTimeout(() => b.classList.remove('show'), ms || 2000);
+      bannerT = setTimeout(() => { b.classList.add('out'); bannerT2 = setTimeout(() => b.classList.remove('show', 'out'), 520); }, ms || 2000);
     }
     /* ---------- hiệu ứng lớp phủ (không chặn thao tác bấm) ---------- */
     const fxo = $('#fxo');

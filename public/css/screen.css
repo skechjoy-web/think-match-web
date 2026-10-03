@@ -188,17 +188,45 @@
 .qbig .qa.on{display:block;animation:fadeup .4s ease-out}
 .qbig .qa span{display:block;font-size:20px;letter-spacing:.24em;color:var(--gold);margin-bottom:6px}
 
-/* ===== dải thông báo kiểu bản trước: CHÍNH XÁC / CHƯA CHÍNH XÁC / GHÉP ĐÚNG ===== */
-.banner{position:absolute;left:0;right:0;height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;opacity:0;transform:scaleY(.2);transition:opacity .3s,transform .35s cubic-bezier(.2,1.4,.4,1);z-index:8;border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.55)}
-.banner.show{opacity:1;transform:scaleY(1)}
-.banner .b1{font-size:84px;font-weight:900;font-style:italic;line-height:1}
-.banner .b2{font-size:34px;font-weight:800;margin-top:10px;color:#fff}
-.banner.ok{background:linear-gradient(90deg,rgba(6,60,45,.97),rgba(9,90,66,.97) 50%,rgba(6,60,45,.97));border:2px solid rgba(93,255,183,.6)}
-.banner.ok .b1{color:#5dffb7}
-.banner.no{background:linear-gradient(90deg,rgba(80,6,20,.97),rgba(120,12,30,.97) 50%,rgba(80,6,20,.97));border:2px solid rgba(255,133,146,.6)}
-.banner.no .b1{color:#ff8592}
-.banner.win{background:linear-gradient(90deg,rgba(40,24,0,.96),rgba(80,50,0,.96) 50%,rgba(40,24,0,.96));border:2px solid rgba(255,200,61,.75)}
-.banner.win .b1{background:linear-gradient(180deg,#fff5c4,#ffc83d 55%,#ff9f1a);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:100px}
-.banner.win .b2{color:#ffe7a3}
-.banner.info{background:linear-gradient(90deg,rgba(8,30,80,.97),rgba(14,50,130,.97) 50%,rgba(8,30,80,.97));border:2px solid rgba(160,220,255,.6)}
-.banner.info .b1{color:#bfe8ff}
+/* ===== dải thông báo: CHÍNH XÁC / CHƯA CHÍNH XÁC / HẾT GIỜ / GHÉP ĐÚNG =====
+   Nền chéo kiểu truyền hình trượt vào từ trái, biểu tượng bật ra, chữ hiện dần, vệt sáng quét qua; xong trượt ra bên phải. */
+.banner{--c1:#5dffb7;--c2:rgba(9,90,66,.96);--c3:rgba(4,40,30,.96);--glow:rgba(46,229,157,.55);position:absolute;left:-10px;right:-10px;height:170px;display:none;align-items:center;justify-content:center;gap:34px;pointer-events:none;z-index:8}
+.banner.show{display:flex}
+.banner .bg{position:absolute;inset:8px 0;clip-path:polygon(4% 0,100% 0,96% 100%,0 100%);background:linear-gradient(90deg,transparent 0,var(--c3) 9%,var(--c2) 50%,var(--c3) 91%,transparent 100%);overflow:hidden}
+.banner .bg::before,.banner .bg::after{content:"";position:absolute;left:6%;right:6%;height:3px;background:linear-gradient(90deg,transparent,var(--c1),transparent);box-shadow:0 0 18px var(--glow)}
+.banner .bg::before{top:0}
+.banner .bg::after{bottom:0}
+.banner .shine{position:absolute;top:-20%;bottom:-20%;width:180px;left:-220px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);transform:skewX(-20deg)}
+.banner .bic{position:relative;flex:none;width:118px;height:118px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.35),transparent 55%),var(--c1);box-shadow:0 0 0 6px rgba(255,255,255,.12),0 0 40px var(--glow),inset 0 -6px 14px rgba(0,0,0,.25)}
+.banner .bic svg{width:66px;height:66px;fill:none;stroke:#05102e;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.banner.win .bic svg{fill:#3a2500;stroke:#3a2500;stroke-width:1.5}
+.banner .btx{position:relative;display:flex;flex-direction:column;align-items:flex-start;max-width:900px}
+.banner .b1{font-size:86px;font-weight:900;font-style:italic;line-height:1;letter-spacing:.01em;color:var(--c1);text-shadow:0 0 30px var(--glow),0 6px 0 rgba(0,0,0,.25);white-space:nowrap}
+.banner .b2{font-size:32px;font-weight:800;margin-top:10px;color:#fff;letter-spacing:.02em;opacity:.95}
+.banner.no{--c1:#ff6b7d;--c2:rgba(130,10,32,.96);--c3:rgba(60,4,16,.96);--glow:rgba(255,77,94,.6)}
+.banner.to{--c1:#ffb547;--c2:rgba(130,70,6,.96);--c3:rgba(60,30,2,.96);--glow:rgba(255,170,40,.55)}
+.banner.win{--c1:#ffd24d;--c2:rgba(95,62,0,.96);--c3:rgba(40,24,0,.96);--glow:rgba(255,200,61,.6)}
+.banner.win .b1{background:linear-gradient(180deg,#fff5c4,#ffc83d 55%,#ff9f1a);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:96px}
+.banner.info{--c1:#8fd8ff;--c2:rgba(14,50,130,.96);--c3:rgba(6,22,64,.96);--glow:rgba(95,212,255,.55)}
+
+/* vào */
+.banner.show .bg{animation:bnBgIn .55s cubic-bezier(.2,.9,.25,1) both}
+.banner.show .shine{animation:bnShine .9s .45s ease-in-out both}
+.banner.show .bic{animation:bnIcon .6s .18s cubic-bezier(.3,1.6,.5,1) both}
+.banner.show .b1{animation:bnTitle .55s .26s cubic-bezier(.2,.9,.25,1) both}
+.banner.show .b2{animation:bnSub .45s .48s ease-out both}
+.banner.no.show .bic,.banner.to.show .bic{animation:bnIcon .6s .18s cubic-bezier(.3,1.6,.5,1) both,bnShake .5s .8s ease-in-out}
+.banner.win.show .bic{animation:bnIcon .6s .18s cubic-bezier(.3,1.6,.5,1) both,bnSpin 1.2s .8s ease-in-out}
+/* ra */
+.banner.out .bg{animation:bnBgOut .45s cubic-bezier(.6,0,.8,.3) both}
+.banner.out .bic,.banner.out .btx{animation:bnFadeOut .3s ease-in both}
+@keyframes bnBgIn{from{transform:translateX(-105%) skewX(-8deg);opacity:.4}to{transform:none;opacity:1}}
+@keyframes bnBgOut{from{transform:none;opacity:1}to{transform:translateX(105%) skewX(-8deg);opacity:0}}
+@keyframes bnShine{from{left:-220px}to{left:110%}}
+@keyframes bnIcon{from{transform:scale(0) rotate(-140deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes bnTitle{from{transform:translateX(-60px);opacity:0;letter-spacing:.3em;filter:blur(6px)}to{transform:none;opacity:1;letter-spacing:.01em;filter:none}}
+@keyframes bnSub{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:.95}}
+@keyframes bnShake{0%,100%{transform:none}20%{transform:translateX(-10px) rotate(-8deg)}40%{transform:translateX(9px) rotate(7deg)}60%{transform:translateX(-6px) rotate(-4deg)}80%{transform:translateX(3px)}}
+@keyframes bnSpin{0%{transform:none}50%{transform:scale(1.12) rotate(180deg)}100%{transform:rotate(360deg)}}
+@keyframes bnFadeOut{to{transform:translateX(40px);opacity:0}}
+.no-motion .banner *{animation:none!important}
