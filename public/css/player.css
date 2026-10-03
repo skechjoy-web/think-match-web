@@ -1,0 +1,57 @@
+/* Màn hình người chơi / trình chiếu 16:9: bảng ô bên trái, khung thông báo bên phải (không che bảng) */
+.col{left:36px;top:112px;width:1240px;height:948px}
+.teambar{gap:20px}
+.tcard{padding:0 22px 0 32px}
+.tcard .nm b{font-size:36px}
+.tcard .sc{font-size:84px}
+.tbox{width:300px}
+.board.main{width:1240px;height:694px}
+.board.small{left:160px;top:22px;width:920px;height:650px}
+.est{width:1240px}
+
+.msgp{position:absolute;left:1300px;top:112px;width:584px;height:948px;border-radius:24px;background:linear-gradient(165deg,rgba(14,44,110,.92),rgba(5,16,46,.95));border:2px solid rgba(120,200,255,.35);box-shadow:0 20px 60px rgba(0,0,0,.45);padding:34px 34px 30px;display:flex;flex-direction:column;gap:20px;overflow:hidden}
+.msgp .tag{align-self:flex-start;font-size:22px;font-weight:900;letter-spacing:.18em;color:var(--cyan);padding:6px 18px;border-radius:40px;border:2px solid var(--cyan)}
+.msgp .tag.gold{color:var(--gold);border-color:var(--gold)}
+.msgp .qt{font-size:44px;font-weight:800;line-height:1.28;overflow-wrap:anywhere}
+.msgp .qt.sm{font-size:32px;color:#d9eeff}
+.msgp .big{font-size:64px;font-weight:900;font-style:italic;line-height:1.12;overflow-wrap:anywhere}
+.msgp .big .tn{color:var(--tc,#fff)}
+.msgp .sub{font-size:28px;font-weight:700;color:#bfe3ff;line-height:1.35}
+.msgp .grow{flex:1;min-height:0}
+.msgp .ans{border-radius:20px;padding:20px 24px;font-size:38px;font-weight:900;line-height:1.25;overflow-wrap:anywhere;background:rgba(255,200,61,.12);border:2px solid rgba(255,200,61,.6);color:#ffe7a3;animation:fadeup .35s ease-out}
+.msgp .ans.ok{background:rgba(25,195,125,.18);border-color:#2ee59d;color:#5dffb7;box-shadow:0 0 40px rgba(46,229,157,.25)}
+.msgp .ans.no{background:rgba(255,77,94,.14);border-color:rgba(255,133,146,.8);color:#ffd0d5}
+.msgp .ans .h{display:block;font-size:44px}
+.msgp .ans.no .h{color:#ff8592}
+.msgp .call{border-radius:20px;padding:22px 24px;font-size:44px;font-weight:900;font-style:italic;line-height:1.15;text-align:center;background:linear-gradient(90deg,rgba(255,200,61,.22),rgba(255,159,26,.18));border:2px solid var(--gold);color:#fff3c4;animation:fadeup .35s ease-out}
+.msgp .call small{display:block;font-size:24px;font-style:normal;font-weight:800;color:#ffe7a3;margin-top:8px}
+.msgp .res{border-radius:20px;padding:20px 24px;font-size:42px;font-weight:900;text-align:center;animation:fadeup .3s ease-out}
+.msgp .res.ok{background:rgba(255,200,61,.2);border:2px solid var(--gold);color:var(--gold)}
+.msgp .res.no{background:rgba(255,77,94,.16);border:2px solid rgba(255,133,146,.7);color:#ff8592}
+.msgp .res small{display:block;font-size:24px;font-weight:800;color:#e8f6ff;margin-top:6px}
+.msgp .next{font-size:26px;font-weight:800;color:var(--muted)}
+
+/* trạng thái kết nối và ghép nối */
+.conn{position:absolute;right:18px;bottom:12px;z-index:40;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:#9fcaf0;background:rgba(3,10,31,.6);padding:5px 12px;border-radius:20px;pointer-events:none}
+.conn i{width:10px;height:10px;border-radius:50%;background:#2ee59d}
+.conn.poll i{background:var(--gold)}
+.conn.off{color:#ffb3bb;font-size:22px;padding:10px 18px;border:2px solid var(--red)}
+.conn.off i{background:var(--red);width:14px;height:14px}
+.conn .t{display:none}
+.conn.off .t,.conn.dev .t{display:inline}
+.locked .board.pickable .tile{pointer-events:none}
+.locked .board .cover{opacity:1}
+.h-tools .iconbtn{opacity:.75}
+.h-tools .iconbtn:hover{opacity:1}
+.audiohint{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:45;font-size:20px;font-weight:800;background:rgba(8,24,70,.95);border:1.5px solid rgba(160,210,255,.45);padding:10px 22px;border-radius:30px;cursor:pointer;display:none}
+.audiohint.show{display:block}
+.pauseov .sub{font-size:30px;font-weight:700;color:#cfeeff}
+.welcome-note{position:absolute;left:0;right:0;bottom:70px;text-align:center;font-size:30px;font-weight:800;color:#bfe3ff}
+#pairM .modal{width:640px;padding:36px 40px;text-align:center}
+#pairM p{font-size:20px;color:#cfe6ff;margin:12px 0 18px;line-height:1.4}
+#pairM .code{font-size:64px;font-weight:900;letter-spacing:.3em;height:90px;border-radius:16px;background:rgba(0,0,0,.3);border:2px solid rgba(160,210,255,.35);display:flex;align-items:center;justify-content:center}
+#pairM .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+#pairM .pad button{height:76px;border-radius:14px;background:rgba(255,255,255,.08);border:1.5px solid rgba(160,210,255,.35);font-size:34px;font-weight:900}
+#pairM .r{display:flex;gap:14px;justify-content:center}
+#pairM .r .btn{height:60px;padding:0 30px;font-size:22px}
+#pairM .err{color:#ff8592;font-weight:800;font-size:20px;min-height:28px}
