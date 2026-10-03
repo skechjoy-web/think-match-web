@@ -55,7 +55,11 @@
         '</header>' +
         '<div class="col" id="col">' +
           '<div class="teambar" id="teambar"></div>' +
-          '<div class="barea" id="barea"><div class="board main" id="board"></div><div class="pairs" id="pairs"></div><div class="small-cap" id="smallCap"></div><div class="est" id="est" style="display:none"></div></div>' +
+          '<div class="barea" id="barea"><div class="board main" id="board"></div><div class="pairs" id="pairs"></div><div class="small-cap" id="smallCap"></div><div class="est" id="est" style="display:none"></div>' +
+            // câu hỏi lớn phủ lên bảng ô trong lúc trả lời; đáp án hiện ngay bên dưới khi được công bố
+            '<div class="qbig" id="qbig"><div class="ql"><span id="qbNo"></span></div><div class="qt" id="qbText"></div><div class="qa" id="qbAns"></div></div>' +
+            '<div class="banner" id="banner"><div class="b1"></div><div class="b2"></div></div>' +
+          '</div>' +
         '</div>' +
         (host ? '<aside class="side panel" id="panel"></aside>' : '<aside class="side msgp" id="msgp"></aside>') +
         '<div class="pauseov"><b class="js-pausedBig"></b><div class="sub js-pausedSub"></div>' + H('<button class="btn btn-primary" id="btnResume"></button>') + '</div>' +
@@ -123,7 +127,7 @@
       if (p.gameId !== lastGame) { lastGame = p.gameId; lastSeq = null; }
       applyBranding();
       show(p.view === 'result' && p.r ? 'result' : p.view === 'game' ? 'game' : 'welcome');
-      renderTeams(prev); self.renderBoard(); if (!host) renderMsg(); renderEst(); renderResult(); renderClocks(); renderTools(); renderConn();
+      renderTeams(prev); self.renderBoard(); renderBig(); if (!host) renderMsg(); renderEst(); renderResult(); renderClocks(); renderTools(); renderConn();
       effects(p); syncMusic();
       if (o.onRender) o.onRender(p, prev);
     };
@@ -208,6 +212,22 @@
       cap.textContent = pub.mode === 'practice' ? tt('Bảng chơi thử: không tính điểm', 'Practice board: no points') : tt('Cặp hình quyết định: 4 ô, đúng 1 cặp', 'Decisive Pair: 4 tiles, exactly one pair');
     };
 
+    /* ---------- câu hỏi lớn trên bảng ô ---------- */
+    function renderBig() {
+      const qb = $('#qbig'), m = pub.msg;
+      const c = m && (m.k === 'main' || m.k === 'tie') && m.phase === 'question' && m.cur && m.cur.q ? m.cur : null;
+      qb.classList.toggle('show', !!c);
+      if (!c) { qb.dataset.k = ''; return; }
+      const text = P(c.q), key = c.ref.s + c.ref.i + ':' + TM.lang;
+      if (qb.dataset.k !== key) {
+        qb.dataset.k = key;
+        $('#qbNo').textContent = TM.qLabel(c.ref);
+        const el = $('#qbText'); el.textContent = text; el.style.fontSize = (text.length > 160 ? 46 : text.length > 90 ? 56 : 68) + 'px';
+      }
+      const a = c.a ? '<span>' + tt('ĐÁP ÁN', 'ANSWER') + '</span>' + esc(P(c.a)) : '';
+      const qa = $('#qbAns'); if (qa.dataset.h !== a) { qa.dataset.h = a; qa.innerHTML = a; qa.classList.toggle('on', !!a); }
+    }
+
     /* ---------- khung thông báo (màn hình trình chiếu, bên phải bảng ô) ---------- */
     function tag(text, gold) { return '<div class="tag' + (gold ? ' gold' : '') + '">' + esc(text) + '</div>'; }
     const tieN = () => ((pub && pub.tie && pub.tie.teams) || [0, 1]).length;
@@ -289,9 +309,9 @@
       const c = m.cur;
       if (m.phase === 'question') {
         if (c && c.q) {
-          h += tag(TM.qLabel(c.ref)) + '<div class="qt">' + esc(P(c.q)) + '</div><div class="grow"></div>';
-          if (c.a) h += '<div class="ans">' + tt('Đáp án: ', 'Answer: ') + q(P(c.a)) + '</div>';
-          else h += '<div class="next">' + fmt(tt('{t} đang trả lời', '{t} is answering'), { t: tnHTML(m.team) }) + '</div>';
+          // nội dung câu hỏi và đáp án đang hiện lớn trên bảng ô
+          h += tag(TM.qLabel(c.ref)) + '<div class="big">' + (TM.lang === 'en' ? teamRef(m.team) + ', your answer?' : 'Mời ' + teamRef(m.team) + ' trả lời') + '</div><div class="grow"></div>';
+          h += '<div class="next">' + (c.a ? tt('Đáp án đã hiện trên màn hình', 'The answer is on screen') : tt('Câu hỏi đang hiện trên màn hình', 'The question is on screen')) + '</div>';
         } else if (!c && m.last) {
           h += tag(TM.qLabel(m.last.ref)) + verdictBlock(m.last, m.last.team, false) + '<div class="grow"></div><div class="next">' + fmt(tt('Lượt tiếp theo: {t}', 'Next turn: {t}'), { t: tnHTML(m.team) }) + '</div>';
         } else if (c) {
@@ -313,7 +333,7 @@
       if (!m.started) return h + '<div class="big">' + tt('Cặp hình quyết định', 'Decisive Pair') + '</div><div class="sub">' + (tms.length > 2 || pub.scores.length > 2 ? fmt(tt('{t} hòa điểm.', '{t} are tied.'), { t: namesOf(tms) }) + ' ' : tt('Hai đội hòa điểm. ', 'The teams are tied. ')) + tt('Đội trả lời đúng và lật trúng cặp hình sẽ thắng.', 'Answer correctly and find the pair to win.') + '</div>';
       if (m.phase === 'question') {
         if (c && c.q) {
-          h = tag(TM.qLabel(c.ref), true) + '<div class="qt">' + esc(P(c.q)) + '</div><div class="grow"></div>';
+          h = tag(TM.qLabel(c.ref), true) + '<div class="grow"></div>';
           if (m.answering == null && m.wrongTeam != null) h += '<div class="ans no"><span class="h">' + fmt(tt('{t} chưa chính xác!', '{t} is incorrect!'), { t: esc(teamName(m.wrongTeam)) }) + '</span></div><div class="call">' + tt('Đội nào giành quyền trả lời tiếp?', 'Which team buzzes in next?') + '</div>';
           else if (m.answering == null) h += '<div class="call">' + tt('Đội nào giành quyền trả lời?', 'Which team will buzz in?') + '</div>';
           else if (m.wrongTeam != null) h += '<div class="ans no"><span class="h">' + fmt(tt('{t} chưa chính xác!', '{t} is incorrect!'), { t: esc(teamName(m.wrongTeam)) }) + '</span></div><div class="call">' + (TM.lang === 'en' ? teamRef(m.answering) + ', your turn to answer!' : 'Mời ' + teamRef(m.answering) + ' trả lời!') + '</div>';
@@ -412,16 +432,54 @@
       if (type === 'win') return celebrate();
       sfx.play(type === 'click' ? 'click' : type);
       const motion = pub.s.motion !== false;
-      if (type === 'match' && motion && pub.board) {
-        pub.board.tiles.forEach((t, i) => { if (t.s === 'o' && t.w) { const c = board.cellRect(i); if (c) { const pt = stagePoint(c); fx.burst(pt.x, pt.y, 60); } } });
-        stamp(tt('GHÉP ĐÚNG!', 'IT’S A MATCH!'), 'gold', false);
+      const m = pub.msg || {}, prac = m.k === 'prac';
+      // bảng thông báo kiểu bản trước: dải màu ngang trên bảng ô
+      if (type === 'right') {
+        const team = m.k === 'main' ? m.team : m.k === 'tie' ? m.answering : null;
+        banner('ok', tt('CHÍNH XÁC!', 'CORRECT!'), team != null ? fmt(tt('MỜI {t} LẬT 2 Ô', '{t}, FLIP 2 TILES'), { t: teamName(team).toUpperCase() }) : tt('MỜI LẬT 2 Ô', 'FLIP 2 TILES'), 1900);
+        if (motion) { fx.burst(700, 520, 70); fx.burst(1220, 520, 70); }
+      } else if (type === 'wrong' || type === 'timeout') {
+        const flipOut = (m.k === 'main' || m.k === 'tie' || prac) && m.phase === 'resolve';
+        banner('no', type === 'timeout' ? (flipOut ? tt('HẾT GIỜ LẬT Ô', 'FLIP TIME IS UP') : tt('HẾT GIỜ!', 'TIME’S UP!')) : tt('CHƯA CHÍNH XÁC', 'INCORRECT'), flipOut ? tt('Không cộng điểm', 'No points') : turnLine(m), 2100);
+      } else if (type === 'match' && pub.board) {
+        const open = pub.board.tiles.map((t, i) => (t.s === 'o' && t.w ? i : -1)).filter(i => i >= 0);
+        if (motion) open.forEach(i => { const c = board.cellRect(i); if (c) { const pt = stagePoint(c); fx.burst(pt.x, pt.y, 80); } });
+        if (motion) fx.rain(1500, 4);
+        if (prac) banner('win', tt('GHÉP ĐÚNG!', 'IT’S A MATCH!'), tt('Chơi thử: không tính điểm', 'Practice: no points'), 2000, open);
+        else if (m.k === 'tie') banner('win', tt('CHIẾN THẮNG!', 'WINNER!'), fmt(tt('{t} tìm được cặp quyết định', '{t} found the decisive pair'), { t: teamName(m.answering) }), 2800, null);
+        else banner('win', tt('GHÉP ĐÚNG!', 'IT’S A MATCH!'), fmt(tt('+1 điểm cho {t}', '+1 point for {t}'), { t: teamName(m.team) }), 2200, open);
+      } else if (type === 'miss' && pub.board && pub.stage !== 'estimate') {
+        const open = pub.board.tiles.map((t, i) => (t.s === 'o' && t.x ? i : -1)).filter(i => i >= 0);
+        if (open.length) banner('no', tt('CHƯA KHỚP', 'NO MATCH'), fmt(tt('Ghi nhớ vị trí: {n} giây', 'Memorize: {n}s'), { n: Math.ceil((S().times || {}).hold || 5) }), Math.round(((S().times || {}).hold || 5) * 1000) + 600, open);
+      } else if (type === 'boom') {
+        if (pub.stage === 'tie' && pub.tie && !pub.tie.started) banner('info', tt('HÒA ĐIỂM!', 'IT’S A TIE!'), tt('Vòng phụ: Cặp hình quyết định', 'Tie-breaker: Decisive Pair'), 3500);
+        else if (pub.stage === 'estimate') banner('info', tt('CÂU HỎI ƯỚC LƯỢNG', 'ESTIMATION QUESTION'), tt('Đội có đáp án gần đúng nhất sẽ thắng', 'The closest answer wins'), 3200);
       }
-      if (!motion) return;
-      if (type === 'qpick') pickCard();
-      else if (type === 'qopen') openCard();
-      else if (type === 'right') { stamp(tt('CHÍNH XÁC!', 'CORRECT!'), 'ok', false); fx.burst(760, 470, 90); fx.burst(1160, 470, 90); setTimeout(() => fx.burst(960, 380, 120), 250); fx.rain(2600, 4); }
-      else if (type === 'wrong') { stamp(tt('CHƯA CHÍNH XÁC!', 'INCORRECT!'), 'no', true); flash('no'); }
-      else if (type === 'timeout') { stamp(tt('HẾT GIỜ!', 'TIME’S UP!'), 'to', true); flash('to'); }
+      if (motion && type === 'qpick') pickCard();
+    }
+    // dòng phụ sau khi trả lời sai / hết giờ
+    function turnLine(m) {
+      if (m.k === 'prac') return tt('Lượt chơi thử kết thúc', 'Practice turn over');
+      if (m.k === 'main' && m.phase === 'question') return fmt(tt('Lượt chuyển sang {t}', 'Turn passes to {t}'), { t: teamName(m.team) });
+      if (m.k === 'tie' && m.cur && m.wrongTeam != null) return m.answering != null ? fmt(tt('{t} được quyền trả lời', '{t} may answer now'), { t: teamName(m.answering) }) : tt('Đội khác giành quyền trả lời', 'Another team may buzz in');
+      return '';
+    }
+    let bannerT = 0;
+    function banner(kind, l1, l2, ms, tile) {
+      const b = $('#banner'); clearTimeout(bannerT);
+      b.className = 'banner ' + kind; b.querySelector('.b1').textContent = l1;
+      const s2 = b.querySelector('.b2'); s2.textContent = l2 || ''; s2.style.display = l2 ? 'block' : 'none';
+      // đặt dải thông báo sát hàng ô vừa lật (bên dưới, hết chỗ thì bên trên) để vẫn thấy hai hình; không có ô thì giữa bảng
+      let top = 694 / 2 - 85;
+      const cs = (Array.isArray(tile) ? tile : tile != null ? [tile] : []).map(i => board.cellRect(i)).filter(Boolean), ba = $('#barea');
+      if (cs.length && ba) {
+        const k = stage.getBoundingClientRect().width / 1920 || 1, br = ba.getBoundingClientRect();
+        const rt = Math.min(...cs.map(c => c.getBoundingClientRect().top - br.top)) / k, rb = Math.max(...cs.map(c => c.getBoundingClientRect().bottom - br.top)) / k;
+        top = rb + 12 + 170 <= 694 ? rb + 12 : rt - 12 - 170 >= 0 ? rt - 12 - 170 : (rt + rb) / 2 - 85;
+      }
+      b.style.top = Math.max(0, Math.min(694 - 170, top)) + 'px';
+      void b.offsetWidth; b.classList.add('show');
+      bannerT = setTimeout(() => b.classList.remove('show'), ms || 2000);
     }
     /* ---------- hiệu ứng lớp phủ (không chặn thao tác bấm) ---------- */
     const fxo = $('#fxo');
@@ -447,25 +505,6 @@
       const sp = srcPoint(), T = 2600 * hold + 900;
       anim(el, [at(sp, 0.06, 0.2, -20), Object.assign(at(C0, 1.08, 1, 3), { offset: 0.22 }), Object.assign(at(C0, 1, 1, 0), { offset: 0.3 }), Object.assign(at(C0, 1, 1, 0), { offset: 0.78 }), at(SIDE, 0.25, 0, 0)], T);
     }
-    function openCard() {
-      let label = '', text = '';
-      const m = pub.msg;
-      if (pub.stage === 'estimate' && pub.est && pub.est.q) { label = tt('CÂU HỎI ƯỚC LƯỢNG', 'ESTIMATION QUESTION'); text = P(pub.est.q); }
-      else if (m && m.cur && m.cur.q) { label = TM.qLabel(m.cur.ref); text = P(m.cur.q); }
-      if (!text) return;
-      const el = addFx('fxcard q', '<small>' + esc(label) + '</small><b style="font-size:' + (text.length > 140 ? 44 : text.length > 80 ? 52 : 62) + 'px">' + esc(text) + '</b>');
-      const T = 3600 * hold + 700;
-      anim(el, [Object.assign(at(C0, 0.3, 0, 0), { transform: 'translate(-50%,-50%) translateY(20px) scale(.3) rotateX(70deg)' }), Object.assign(at(C0, 1.05, 1), { offset: 0.14 }), Object.assign(at(C0, 1, 1), { offset: 0.2 }), Object.assign(at(C0, 1, 1), { offset: 0.8 }), at(SIDE, 0.3, 0)], T);
-    }
-    function stamp(text, kind, shake) {
-      const el = addFx('fxstamp ' + kind, esc(text) + (kind === 'no' ? '<span class="xm">' + IC.x + '</span>' : ''));
-      const T = 1900 * hold + 500;
-      const f = [{ transform: 'translate(-50%,-50%) scale(2.6) rotate(-8deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(.92) rotate(-4deg)', opacity: 1, offset: 0.12 }, { transform: 'translate(-50%,-50%) scale(1) rotate(-4deg)', opacity: 1, offset: 0.18 }];
-      if (shake) [-26, 22, -16, 10, 0].forEach((dx, k) => f.push({ transform: 'translate(calc(-50% + ' + dx + 'px),-50%) scale(1) rotate(-4deg)', opacity: 1, offset: 0.22 + k * 0.04 }));
-      f.push({ transform: 'translate(-50%,-50%) scale(1) rotate(-4deg)', opacity: 1, offset: 0.8 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(-4deg)', opacity: 0 });
-      anim(el, f, T);
-    }
-    function flash(kind) { const el = addFx('fxflash ' + kind, ''); anim(el, [{ opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 0.6, offset: 0.4 }, { opacity: 0 }], 1400); }
     function celebrate() {
       duckMusic();
       if (localSound && pub.s.sfx !== false) {

@@ -30,7 +30,8 @@ Mật khẩu do Supabase lưu dạng mã hóa, không nằm trong mã trang web.
 - **Chơi thử**: bấm trên màn hình chào, chơi một lượt trên bảng 4 ô không tính điểm, rồi bấm **KẾT THÚC CHƠI THỬ** để quay lại màn hình chính.
 
 - Màn hình trình chiếu có **bảng số câu hỏi** bên phải để các đội chọn câu (câu đã dùng bị gạch, câu đang chọn sáng vàng). Không có nội dung hay đáp án trong bảng này.
-- Hiệu ứng: MC bấm số câu thì thẻ câu hỏi bay ra giữa màn hình; bấm Bắt đầu tính giờ thì câu hỏi hiện lớn rồi thu vào khung bên phải; Đúng thì chữ CHÍNH XÁC và tung hoa giấy; Sai thì chữ CHƯA CHÍNH XÁC rung lắc, viền đỏ; hết giờ thì HẾT GIỜ. Tắt hiệu ứng trong Cài đặt → Khác.
+- Hiệu ứng: MC bấm số câu thì thẻ câu hỏi bay ra giữa màn hình. Bấm Bắt đầu tính giờ thì câu hỏi hiện lớn, cố định trên bảng ô; bấm Xem đáp án thì đáp án hiện ngay bên dưới câu hỏi. Đúng: dải xanh CHÍNH XÁC, mời đội lật 2 ô. Sai: dải đỏ CHƯA CHÍNH XÁC, báo lượt chuyển sang đội nào. Lật trúng cặp: dải vàng GHÉP ĐÚNG, +1 điểm cho đội. Đội thắng: pháo hoa kèm tiếng nổ và kèn chiến thắng. Tắt hiệu ứng chuyển động trong Cài đặt → Khác.
+- Âm thanh phát ở máy nào đang bật biểu tượng loa. Trang MC mặc định tắt loa để không bị trùng tiếng với màn hình trình chiếu; bấm biểu tượng loa nếu muốn nghe trên máy MC.
 
 ## 3. Mở màn hình trình chiếu
 - Bấm biểu tượng màn hình ở góc trên trang MC (hoặc **Cài đặt → Mở màn hình trình chiếu**). Kéo cửa sổ mới sang máy chiếu rồi bấm biểu tượng toàn màn hình (hoặc nhấp đúp).
