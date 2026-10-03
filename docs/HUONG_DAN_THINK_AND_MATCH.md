@@ -41,7 +41,8 @@ Mật khẩu do Supabase lưu dạng mã hóa, không nằm trong mã trang web.
 ## 4. Trang Cài đặt
 Bấm **Cài đặt** để mở trang chỉnh hệ thống, bấm **Về màn hình chính** để quay lại:
 - **Chương trình, đội, thời gian, hình, nhạc**: tên chương trình, khẩu hiệu, ngôn ngữ, tên và màu đội, thời gian từng vòng, logo, ảnh nền, 15 hình giày, nhạc nền, nhạc chiến thắng. Nhớ bấm **Lưu cài đặt**.
-- **Câu hỏi**: ngân hàng câu hỏi (xem mục 7).
+- **Âm thanh hiệu ứng** (trong mục đầu tiên): chọn tiếng cho lúc chọn câu, hiện câu hỏi, trả lời đúng, sai, hết giờ, lật trúng cặp và chúc mừng đội thắng. Mỗi lúc có 2–3 kiểu hoặc Tắt tiếng; bấm ▶ để nghe thử.
+- **Câu hỏi**: ngân hàng câu hỏi (xem mục 9).
 - **Màn hình cảm ứng**: chọn ai bấm ô (MC hay người chơi chạm màn hình) và ghép nối màn hình cảm ứng.
 - **Tài khoản**: tài khoản đang dùng, nút Đăng xuất; Admin thêm/gỡ tài khoản MC tại đây.
 - **Lịch sử trận**: các trận đã chơi.
