@@ -156,4 +156,63 @@ assert.strictEqual(S2.times.main, 90); assert.strictEqual(S2.times.answer, 5); a
 
 const pf = E.preflight(st.settings, [{ id: 'q', grp: 'main', q_vi: 'x', a_vi: '', enabled: true }]);
 assert.ok(pf.warnings.length >= 3);
+// ===== 3–4 đội =====
+{
+  let t3 = 2_000_000;
+  const s3 = E.ensure(null);
+  const a3 = (a) => { E.advance(s3, t3); E.apply(s3, a, t3, { bank: bank() }); };
+  const k3 = (ms) => { t3 += ms; E.advance(s3, t3); };
+  a3({ type: 'newMatch', teams: ['A', 'B', 'C', 'D'], first: 2 });
+  assert.strictEqual(s3.settings.teams.length, 4);
+  assert.strictEqual(s3.settings.teams[3].color, '#3ddc84');
+  assert.deepStrictEqual(s3.game.m.scores, [0, 0, 0, 0]);
+  assert.strictEqual(E.project(s3, t3, 1).s.teams.length, 4);
+  a3({ type: 'startMain' });
+  assert.strictEqual(s3.game.m.turn, 2);
+  // lượt xoay vòng 2 → 3 → 0
+  a3({ type: 'select', s: 'm', i: 0 }); a3({ type: 'open' }); a3({ type: 'judge', ok: false });
+  assert.strictEqual(s3.game.m.turn, 3);
+  a3({ type: 'select', s: 'm', i: 1 }); a3({ type: 'open' }); a3({ type: 'judge', ok: false });
+  assert.strictEqual(s3.game.m.turn, 0);
+  assert.throws(() => a3({ type: 'adjust', team: 4, d: 1 }));
+  // B và D đồng điểm cao nhất: chỉ hai đội này vào vòng phụ
+  a3({ type: 'adjust', team: 1, d: 1 }); a3({ type: 'adjust', team: 3, d: 1 });
+  a3({ type: 'endMain' }); k3(5000);
+  assert.strictEqual(s3.game.stage, 'tie');
+  assert.deepStrictEqual(s3.game.t.teams, [1, 3]);
+  a3({ type: 'startTie' }); a3({ type: 'select', i: 0 }); a3({ type: 'open' });
+  assert.throws(() => a3({ type: 'claim', team: 0 }), 'đội không đồng điểm không được giành quyền');
+  a3({ type: 'claim', team: 3 }); a3({ type: 'judge', ok: false });
+  assert.strictEqual(s3.game.t.answering, 1, 'còn một đội thì đội đó trả lời luôn');
+  a3({ type: 'toEst' });
+  assert.deepStrictEqual(s3.game.e.teams, [1, 3]);
+  a3({ type: 'estShow' }); a3({ type: 'estSet', a: ['95', '105'] }); a3({ type: 'estCompare' });
+  assert.strictEqual(s3.game.e.result.winner, null, 'sai lệch bằng nhau');
+  a3({ type: 'estNew' }); a3({ type: 'estShow' }); a3({ type: 'estSet', a: ['99', '120'] }); a3({ type: 'estCompare' });
+  assert.strictEqual(s3.game.e.result.winner, 1);
+  a3({ type: 'announce' });
+  assert.strictEqual(s3.game.r.winner, 1);
+  assert.strictEqual(E.matchRecord(s3, t3).winner, 'B');
+}
+{
+  // 3 đội cùng hòa: sai một đội thì MC chọn đội giành quyền tiếp theo
+  let t4 = 3_000_000;
+  const s4 = E.ensure(null);
+  const a4 = (a) => { E.advance(s4, t4); E.apply(s4, a, t4, { bank: bank() }); };
+  a4({ type: 'newMatch', teams: ['X', 'Y', 'Z'], first: 0 });
+  a4({ type: 'startMain' }); a4({ type: 'endMain' }); t4 += 5000; E.advance(s4, t4);
+  assert.deepStrictEqual(s4.game.t.teams, [0, 1, 2]);
+  a4({ type: 'startTie' }); a4({ type: 'select', i: 0 }); a4({ type: 'open' });
+  a4({ type: 'claim', team: 1 }); a4({ type: 'judge', ok: false });
+  assert.strictEqual(s4.game.t.answering, null);
+  assert.strictEqual(s4.game.t.wrongTeam, 1);
+  assert.throws(() => a4({ type: 'claim', team: 1 }), 'đội đã sai không được giành lại');
+  a4({ type: 'claim', team: 2 }); a4({ type: 'judge', ok: false });
+  assert.strictEqual(s4.game.t.answering, 0);
+  a4({ type: 'judge', ok: false });
+  assert.strictEqual(s4.game.t.last.verdict, 'bothWrong');
+  // số đội giới hạn 2–4
+  assert.strictEqual(E.mergeSettings(s4.settings, { teams: [1, 2, 3, 4, 5, 6].map(i => ({ name: 'T' + i })) }).teams.length, 4);
+  assert.strictEqual(E.mergeSettings(s4.settings, { teams: [{ name: 'only' }] }).teams.length, 2);
+}
 console.log('engine tests OK');

@@ -118,7 +118,21 @@
       thud() { tone(90, 0, 0.5, 'sine', 0.35, 45); noise(0, 0.2, 0.12, 200); tone(220, 0.05, 0.3, 'square', 0.05, 160); },
       alarm() { for (let i = 0; i < 3; i++) { tone(880, i * 0.3, 0.14, 'square', 0.09); tone(660, i * 0.3 + 0.15, 0.14, 'square', 0.09); } },
       beeps() { tone(440, 0, 0.22, 'square', 0.1); tone(330, 0.24, 0.22, 'square', 0.1); tone(220, 0.48, 0.5, 'sawtooth', 0.12, 180); },
-      sparkle() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.08, 0.3, 'square', 0.07)); [1047, 1319, 1568].forEach(f => tone(f, 0.45, 0.7, 'triangle', 0.12)); noise(0.4, 0.35, 0.06); },
+      // ghép đúng: chuỗi nốt đi lên sáng, hợp âm ngân dài và tiếng lấp lánh
+      sparkle() {
+        tone(392, 0, 0.12, 'square', 0.07); tone(523, 0.06, 0.12, 'square', 0.07);
+        [784, 988, 1175, 1568].forEach((f, i) => { tone(f, 0.12 + i * 0.07, 0.32, 'triangle', 0.14); tone(f * 2, 0.12 + i * 0.07, 0.2, 'sine', 0.04); });
+        [1047, 1319, 1568, 2093].forEach(f => tone(f, 0.42, 1.3, 'sine', 0.08));
+        [784, 988].forEach(f => tone(f, 0.42, 1.1, 'triangle', 0.06));
+        for (let i = 0; i < 9; i++) tone(2637 + (i % 3) * 523, 0.5 + i * 0.07, 0.18, 'sine', 0.035);
+        noise(0.42, 0.6, 0.05, 6000);
+      },
+      classic() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.08, 0.3, 'square', 0.07)); [1047, 1319, 1568].forEach(f => tone(f, 0.45, 0.7, 'triangle', 0.12)); noise(0.4, 0.35, 0.06); },
+      // pháo hoa: tiếng nổ chắc + tiếng tí tách (nghe rõ cả trên loa laptop)
+      firework() {
+        noise(0, 0.5, 0.34, 350); tone(150, 0, 0.35, 'sine', 0.32, 50); tone(420, 0, 0.12, 'triangle', 0.08, 200);
+        for (let i = 0; i < 8; i++) noise(0.14 + i * 0.07 + Math.random() * 0.04, 0.035, 0.08, 3500);
+      },
       jingle() { [1568, 1319, 1568, 2093].forEach((f, i) => tone(f, i * 0.1, 0.25, 'triangle', 0.12)); for (let i = 0; i < 6; i++) noise(i * 0.08, 0.05, 0.05, 5000); },
       fanfare() {
         [[523, 0, 0.18], [523, 0.2, 0.18], [523, 0.4, 0.18], [659, 0.6, 0.5], [587, 1.15, 0.2], [659, 1.35, 0.2], [784, 1.55, 1.2]].forEach(([f, s, d]) => { tone(f, s, d + 0.1, 'sawtooth', 0.09); tone(f * 2, s, d + 0.1, 'triangle', 0.07); });
@@ -148,7 +162,7 @@
         case 'start': P.bell(); break;
         case 'reveal': P.reveal(); break;
         case 'miss': tone(330, 0, 0.18, 'square', 0.07); tone(247, 0.18, 0.32, 'square', 0.07); break;
-        case 'boom': noise(0, 0.6, 0.25, 200); tone(90, 0, 0.5, 'sine', 0.25, 40); break;
+        case 'boom': P.firework(); break;
         case 'shuffle': for (let i = 0; i < 6; i++) noise(i * 0.07, 0.06, 0.08); break;
       }
     };
@@ -164,7 +178,7 @@
     ['right', 'Trả lời đúng', 'Correct answer', [['bell', 'Chuông vui', 'Happy bell'], ['arpeggio', 'Nhạc thắng', 'Winner arpeggio'], ['coin', 'Đồng xu', 'Coin']]],
     ['wrong', 'Trả lời sai', 'Wrong answer', [['buzzer', 'Còi báo sai', 'Buzzer'], ['trombone', 'Kèn tiếc nuối', 'Sad trombone'], ['thud', 'Tiếng rơi', 'Thud']]],
     ['timeout', 'Hết giờ', 'Time up', [['alarm', 'Chuông báo', 'Alarm'], ['beeps', 'Tít tít', 'Beeps']]],
-    ['match', 'Lật trúng cặp', 'Pair found', [['sparkle', 'Pháo sáng', 'Sparkle'], ['jingle', 'Leng keng', 'Jingle']]],
+    ['match', 'Lật trúng cặp', 'Pair found', [['sparkle', 'Rực rỡ', 'Brilliant'], ['classic', 'Cổ điển (bản cũ)', 'Classic (old version)'], ['jingle', 'Leng keng', 'Jingle']]],
     ['win', 'Chúc mừng đội thắng', 'Winner celebration', [['fanfare', 'Kèn chiến thắng', 'Fanfare'], ['victory', 'Khúc khải hoàn', 'Victory'], ['march', 'Hành khúc', 'March']]],
   ];
 

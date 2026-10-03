@@ -9,6 +9,7 @@
     help: '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.2 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5"/><circle cx="12" cy="18" r=".6" fill="currentColor"/></svg>',
     gear: '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
     home: '<svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>',
+    pad: '<svg class="ic" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 10.5v4M5 12.5h4"/><circle cx="15.5" cy="11.5" r=".9" fill="currentColor"/><circle cx="18" cy="13.8" r=".9" fill="currentColor"/></svg>',
     screen: '<svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
   });
   TM.IC = IC;
@@ -33,7 +34,9 @@
         '</div>' +
         '<div class="center">' +
           '<div class="w-logo brand-logo js-logo"></div><div class="w-title js-pname">THINK &amp; MATCH</div><div class="w-bar"></div><div class="w-tag js-tagline"></div>' +
-          H('<div class="w-btns"><button class="btn btn-primary big" id="btnStart"></button><button class="btn btn-ghost mid" id="btnPractice"></button><button class="btn btn-ghost mid js-settings" id="btnSettings"></button></div><div class="w-note" id="wNote"></div>') +
+          // Màn hình trình chiếu hiện cùng các nút như trang MC nhưng chỉ để nhìn (không bấm được)
+          '<div class="w-btns' + P(' mirror') + '"' + P(' aria-hidden="true"') + '><button class="btn btn-primary big" id="' + (host ? 'btnStart' : 'pStart') + '"' + P(' tabindex="-1"') + '></button><button class="btn btn-ghost mid" id="' + (host ? 'btnPractice' : 'pPractice') + '"' + P(' tabindex="-1"') + '></button>' + H('<button class="btn btn-ghost mid js-settings" id="btnSettings"></button>') + '</div>' +
+          H('<div class="w-note" id="wNote"></div>') +
         '</div>' +
       '</section>' +
       '<section id="game" class="screen">' +
@@ -51,11 +54,12 @@
           '</div>' +
         '</header>' +
         '<div class="col" id="col">' +
-          '<div class="teambar">' +
-            [0, 1].map(i => (i === 1 ? '<div class="tbox idle" id="tbox"><div class="l"></div><div class="v tnum"></div><div class="s"></div><div class="bar"></div></div>' : '') +
-              '<div class="tcard" data-team="' + i + '"><div class="nm"><b></b><span></span></div>' + H('<div class="adj"><button data-d="1">+</button><button data-d="-1">−</button></div>') + '<div class="sc tnum">0</div></div>').join('') +
+          '<div class="teambar" id="teambar"></div>' +
+          '<div class="barea" id="barea"><div class="board main" id="board"></div><div class="pairs" id="pairs"></div><div class="small-cap" id="smallCap"></div><div class="est" id="est" style="display:none"></div>' +
+            // câu hỏi lớn phủ lên bảng ô trong lúc trả lời; đáp án hiện ngay bên dưới khi được công bố
+            '<div class="qbig" id="qbig"><div class="ql"><span id="qbNo"></span></div><div class="qt" id="qbText"></div><div class="qa" id="qbAns"></div></div>' +
+            '<div class="banner" id="banner"><div class="bg"><i class="shine"></i></div><div class="bic"></div><div class="btx"><div class="b1"></div><div class="b2"></div></div></div>' +
           '</div>' +
-          '<div class="barea" id="barea"><div class="board main" id="board"></div><div class="pairs" id="pairs"></div><div class="small-cap" id="smallCap"></div><div class="est" id="est" style="display:none"></div></div>' +
         '</div>' +
         (host ? '<aside class="side panel" id="panel"></aside>' : '<aside class="side msgp" id="msgp"></aside>') +
         '<div class="pauseov"><b class="js-pausedBig"></b><div class="sub js-pausedSub"></div>' + H('<button class="btn btn-primary" id="btnResume"></button>') + '</div>' +
@@ -123,7 +127,7 @@
       if (p.gameId !== lastGame) { lastGame = p.gameId; lastSeq = null; }
       applyBranding();
       show(p.view === 'result' && p.r ? 'result' : p.view === 'game' ? 'game' : 'welcome');
-      renderTeams(prev); self.renderBoard(); if (!host) renderMsg(); renderEst(); renderResult(); renderClocks(); renderTools(); renderConn();
+      renderTeams(prev); self.renderBoard(); renderBig(); if (!host) renderMsg(); renderEst(); renderResult(); renderClocks(); renderTools(); renderConn();
       effects(p); syncMusic();
       if (o.onRender) o.onRender(p, prev);
     };
@@ -139,12 +143,26 @@
       $$('.js-bg').forEach(e => { if (e.style.backgroundImage !== bg) e.style.backgroundImage = bg; });
       $$('.js-reveal').forEach(e => { if (e.style.backgroundImage !== rv) e.style.backgroundImage = rv; });
       $$('.js-shoe').forEach(e => { const u = (s.shoes || [])[+e.dataset.slot] || ('assets/shoes/' + String(+e.dataset.slot + 1).padStart(2, '0') + '.jpg'); if (e.getAttribute('src') !== u) e.src = u; });
-      const w = $('#welcome .w-title'), n = (s.pname || '').length; w.style.fontSize = (n > 14 ? Math.max(80, Math.round(176 * 14 / n)) : 176) + 'px';
+      fitAll();
+      const started = !!(pub.created && pub.stage !== 'result');
+      if (!host) { $('#pStart').innerHTML = IC.play + '<span>' + esc(started ? tt('TIẾP TỤC', 'CONTINUE') : tt('BẮT ĐẦU', 'START')) + '</span>'; $('#pPractice').innerHTML = IC.pad + '<span>' + tt('Chơi thử', 'Practice') + '</span>'; }
       $$('.js-pausedBig').forEach(e => { e.textContent = tt('TẠM DỪNG', 'PAUSED'); });
       $$('.js-pausedSub').forEach(e => { e.textContent = host ? '' : tt('Chờ MC tiếp tục trận đấu', 'Waiting for the host to resume'); });
       document.title = (s.pname || 'THINK & MATCH') + (host ? ' – MC' : ' – SKECHERS');
     }
-    function show(id) { if (screen === id) return; screen = id; $$('.screen').forEach(s => s.classList.toggle('active', s.id === id)); }
+    // Thu nhỏ chữ cho vừa khung (đo thật, không đoán theo số ký tự, vì phông chữ mỗi máy khác nhau)
+    function fitText(el, maxW, big, small) {
+      if (!el) return;
+      el.style.fontSize = big + 'px';
+      const k = stage.getBoundingClientRect().width / 1920, r = document.createRange(); r.selectNodeContents(el);
+      const w = k ? r.getBoundingClientRect().width / k : 0; // màn hình đang ẩn thì đo lại khi hiện
+      if (w > maxW) el.style.fontSize = Math.max(small, Math.floor(big * maxW / w)) + 'px';
+    }
+    this.fitText = fitText;
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (pub) applyBranding(); });
+    function show(id) { if (screen === id) return; screen = id; $$('.screen').forEach(s => s.classList.toggle('active', s.id === id)); fitAll(); }
+    function fitAll() { fitText($('#welcome .w-title'), 1120, 168, 70); if (pub && pub.r) fitText($('#rTeam'), 1600, 200, 80); }
+    addEventListener('resize', () => { if (pub) fitAll(); });
 
     /* ---------- đội & điểm ---------- */
     function curTeam() {
@@ -153,13 +171,28 @@
       if (m.k === 'tie') return m.answering;
       return null;
     }
+    const nTeams = () => Math.max(2, (pub && pub.scores && pub.scores.length) || 2);
+    // Thanh đội: 2 đội thì ô đồng hồ ở giữa; 3–4 đội thì các thẻ đội gọn hơn
+    function buildTeambar(n) {
+      const bar = $('#teambar'); if (bar.dataset.n === String(n)) return;
+      bar.dataset.n = n; bar.className = 'teambar n' + n;
+      const card = i => '<div class="tcard" data-team="' + i + '"><div class="nm"><b></b><span></span></div>' + (host ? '<div class="adj"><button data-d="1">+</button><button data-d="-1">−</button></div>' : '') + '<div class="sc tnum">0</div></div>';
+      const box = '<div class="tbox idle" id="tbox"><div class="l"></div><div class="v tnum"></div><div class="s"></div><div class="bar"></div></div>';
+      const mid = n === 3 ? 3 : n / 2;
+      let h = ''; for (let i = 0; i < n; i++) { if (i === mid) h += box; h += card(i); } if (mid >= n) h += box;
+      bar.innerHTML = h;
+    }
     function renderTeams(prev) {
+      buildTeambar(nTeams());
       const cur = curTeam(), prac = pub.mode === 'practice';
       $$('.tcard').forEach(el => {
         const i = +el.dataset.team;
         el.style.setProperty('--tc', teamColor(i));
         el.querySelector('.nm b').textContent = teamName(i);
         el.querySelector('.nm span').textContent = pub.stage === 'tie' ? tt('ĐANG TRẢ LỜI', 'ANSWERING') : tt('ĐANG CHƠI', 'NOW PLAYING');
+        // vòng phụ / ước lượng: làm mờ các đội không còn tranh ngôi
+        const inPlay = pub.stage === 'tie' && pub.tie ? pub.tie.teams : pub.stage === 'estimate' && pub.est ? pub.est.teams : null;
+        el.classList.toggle('out', !prac && !!inPlay && !inPlay.includes(i));
         el.classList.toggle('cur', !prac && cur === i);
         el.querySelector('.sc').textContent = prac ? '–' : pub.scores[i];
         if (prev && prev.gameId === pub.gameId && !prac && prev.scores && pub.scores[i] > prev.scores[i]) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
@@ -179,8 +212,26 @@
       cap.textContent = pub.mode === 'practice' ? tt('Bảng chơi thử: không tính điểm', 'Practice board: no points') : tt('Cặp hình quyết định: 4 ô, đúng 1 cặp', 'Decisive Pair: 4 tiles, exactly one pair');
     };
 
+    /* ---------- câu hỏi lớn trên bảng ô ---------- */
+    function renderBig() {
+      const qb = $('#qbig'), m = pub.msg;
+      const c = m && (m.k === 'main' || m.k === 'tie') && m.phase === 'question' && m.cur && m.cur.q ? m.cur : null;
+      qb.classList.toggle('show', !!c);
+      if (!c) { qb.dataset.k = ''; return; }
+      const text = P(c.q), key = c.ref.s + c.ref.i + ':' + TM.lang;
+      if (qb.dataset.k !== key) {
+        qb.dataset.k = key;
+        $('#qbNo').textContent = TM.qLabel(c.ref);
+        const el = $('#qbText'); el.textContent = text; el.style.fontSize = (text.length > 160 ? 46 : text.length > 90 ? 56 : 68) + 'px';
+      }
+      const a = c.a ? '<span>' + tt('ĐÁP ÁN', 'ANSWER') + '</span>' + esc(P(c.a)) : '';
+      const qa = $('#qbAns'); if (qa.dataset.h !== a) { qa.dataset.h = a; qa.innerHTML = a; qa.classList.toggle('on', !!a); }
+    }
+
     /* ---------- khung thông báo (màn hình trình chiếu, bên phải bảng ô) ---------- */
     function tag(text, gold) { return '<div class="tag' + (gold ? ' gold' : '') + '">' + esc(text) + '</div>'; }
+    const tieN = () => ((pub && pub.tie && pub.tie.teams) || [0, 1]).length;
+    const namesOf = list => list.map(i => esc(teamName(i))).join(', ');
     function verdictBlock(x, team, tie) {
       // Đáp án chỉ có trong dữ liệu khi đã được công bố.
       let h = '';
@@ -189,7 +240,7 @@
       if (x.verdict === 'correct') h += '<div class="ans ok"><span class="h">' + tt('Chính xác: ', 'Correct: ') + q(a) + '</span></div>' + resultBlock(x.result, team, tie);
       else if (x.verdict === 'wrong') h += '<div class="ans no"><span class="h">' + tt('Chưa chính xác!', 'Incorrect!') + '</span>' + tt('Đáp án đúng: ', 'The correct answer is: ') + q(a) + '</div>';
       else if (x.verdict === 'timeout') h += '<div class="ans no"><span class="h">' + tt('Hết giờ trả lời!', 'Time’s up!') + '</span>' + tt('Đáp án đúng: ', 'The correct answer is: ') + q(a) + '</div>';
-      else if (x.verdict === 'bothWrong') h += '<div class="ans no"><span class="h">' + tt('Cả hai đội chưa chính xác!', 'Both teams are incorrect!') + '</span>' + tt('Đáp án đúng: ', 'The correct answer is: ') + q(a) + '</div>';
+      else if (x.verdict === 'bothWrong') h += '<div class="ans no"><span class="h">' + (tieN() > 2 ? tt('Các đội đều chưa chính xác!', 'No team got it right!') : tt('Cả hai đội chưa chính xác!', 'Both teams are incorrect!')) + '</span>' + tt('Đáp án đúng: ', 'The correct answer is: ') + q(a) + '</div>';
       else if (x.verdict === 'revealed') h += '<div class="ans">' + tt('Đáp án: ', 'Answer: ') + q(a) + '</div>';
       return h;
     }
@@ -231,7 +282,8 @@
       } else if (m.k === 'over') {
         h = tag(tt('VÒNG CHÍNH', 'MAIN ROUND')) + '<div class="big">' + tt('Kết thúc vòng chính!', 'Main round over!') + '</div>';
         h += '<div class="sub">' + (m.reason === 'done' ? tt('Đã tìm đủ 8 cặp hình.', 'All 8 pairs are found.') : tt('Hết thời gian vòng chính.', 'The main round time is up.')) + '</div>';
-        h += '<div class="res ok">' + esc(teamName(0)) + ' ' + pub.scores[0] + ' – ' + pub.scores[1] + ' ' + esc(teamName(1)) + '<small>' + (pub.scores[0] === pub.scores[1] ? tt('Hòa điểm: vào vòng phụ', 'Tied: tie-breaker next') : tt('Đang công bố kết quả…', 'Announcing the result…')) + '</small></div>';
+        const sc = pub.scores, top = Math.max(...sc), tied = sc.filter(v => v === top).length > 1;
+        h += '<div class="res ok">' + (sc.length === 2 ? esc(teamName(0)) + ' ' + sc[0] + ' – ' + sc[1] + ' ' + esc(teamName(1)) : sc.map((v, i) => '<span class="sline">' + tnHTML(i) + ' <b>' + v + '</b></span>').join('')) + '<small>' + (tied ? tt('Hòa điểm: vào vòng phụ', 'Tied: tie-breaker next') : tt('Đang công bố kết quả…', 'Announcing the result…')) + '</small></div>';
       } else if (m.k === 'tie') {
         h = tieMsg(m);
       }
@@ -257,9 +309,9 @@
       const c = m.cur;
       if (m.phase === 'question') {
         if (c && c.q) {
-          h += tag(TM.qLabel(c.ref)) + '<div class="qt">' + esc(P(c.q)) + '</div><div class="grow"></div>';
-          if (c.a) h += '<div class="ans">' + tt('Đáp án: ', 'Answer: ') + q(P(c.a)) + '</div>';
-          else h += '<div class="next">' + fmt(tt('{t} đang trả lời', '{t} is answering'), { t: tnHTML(m.team) }) + '</div>';
+          // nội dung câu hỏi và đáp án đang hiện lớn trên bảng ô
+          h += tag(TM.qLabel(c.ref)) + '<div class="big">' + (TM.lang === 'en' ? teamRef(m.team) + ', your answer?' : 'Mời ' + teamRef(m.team) + ' trả lời') + '</div><div class="grow"></div>';
+          h += '<div class="next">' + (c.a ? tt('Đáp án đã hiện trên màn hình', 'The answer is on screen') : tt('Câu hỏi đang hiện trên màn hình', 'The question is on screen')) + '</div>';
         } else if (!c && m.last) {
           h += tag(TM.qLabel(m.last.ref)) + verdictBlock(m.last, m.last.team, false) + '<div class="grow"></div><div class="next">' + fmt(tt('Lượt tiếp theo: {t}', 'Next turn: {t}'), { t: tnHTML(m.team) }) + '</div>';
         } else if (c) {
@@ -277,11 +329,13 @@
     function tieMsg(m) {
       let h = tag(tt('VÒNG PHỤ', 'TIE-BREAKER'), true);
       const c = m.cur;
-      if (!m.started) return h + '<div class="big">' + tt('Cặp hình quyết định', 'Decisive Pair') + '</div><div class="sub">' + tt('Hai đội hòa điểm. Đội trả lời đúng và lật trúng cặp hình sẽ thắng.', 'The teams are tied. Answer correctly and find the pair to win.') + '</div>';
+      const tms = m.teams || [0, 1];
+      if (!m.started) return h + '<div class="big">' + tt('Cặp hình quyết định', 'Decisive Pair') + '</div><div class="sub">' + (tms.length > 2 || pub.scores.length > 2 ? fmt(tt('{t} hòa điểm.', '{t} are tied.'), { t: namesOf(tms) }) + ' ' : tt('Hai đội hòa điểm. ', 'The teams are tied. ')) + tt('Đội trả lời đúng và lật trúng cặp hình sẽ thắng.', 'Answer correctly and find the pair to win.') + '</div>';
       if (m.phase === 'question') {
         if (c && c.q) {
-          h = tag(TM.qLabel(c.ref), true) + '<div class="qt">' + esc(P(c.q)) + '</div><div class="grow"></div>';
-          if (m.answering == null) h += '<div class="call">' + tt('Đội nào giành quyền trả lời?', 'Which team will buzz in?') + '</div>';
+          h = tag(TM.qLabel(c.ref), true) + '<div class="grow"></div>';
+          if (m.answering == null && m.wrongTeam != null) h += '<div class="ans no"><span class="h">' + fmt(tt('{t} chưa chính xác!', '{t} is incorrect!'), { t: esc(teamName(m.wrongTeam)) }) + '</span></div><div class="call">' + tt('Đội nào giành quyền trả lời tiếp?', 'Which team buzzes in next?') + '</div>';
+          else if (m.answering == null) h += '<div class="call">' + tt('Đội nào giành quyền trả lời?', 'Which team will buzz in?') + '</div>';
           else if (m.wrongTeam != null) h += '<div class="ans no"><span class="h">' + fmt(tt('{t} chưa chính xác!', '{t} is incorrect!'), { t: esc(teamName(m.wrongTeam)) }) + '</span></div><div class="call">' + (TM.lang === 'en' ? teamRef(m.answering) + ', your turn to answer!' : 'Mời ' + teamRef(m.answering) + ' trả lời!') + '</div>';
           else h += '<div class="call">' + fmt(tt('{t} đang trả lời', '{t} is answering'), { t: tnHTML(m.answering) }) + '</div>';
         } else if (!c && m.last) {
@@ -306,8 +360,11 @@
       let cols = '';
       if (R) {
         const unit = E.unit ? ' <small>' + esc(E.unit) + '</small>' : '';
-        const col = i => '<div class="c' + (R.winner === i ? ' win' : '') + '"><div class="t" style="color:' + esc(teamColor(i)) + '">' + esc(teamName(i)) + '</div><div class="n">' + fmtNum(R.a[i]) + unit + '</div><div class="d">' + fmt(tt('Sai lệch: {d}', 'Difference: {d}'), { d: fmtNum(R.d[i]) }) + '</div></div>';
-        cols = '<div class="cols">' + col(0) + '<div class="c std"><div class="t">' + tt('ĐÁP ÁN CHUẨN', 'CORRECT ANSWER') + '</div><div class="n">' + fmtNum(R.c) + unit + '</div><div class="d">&nbsp;</div></div>' + col(1) + '</div>';
+        const tm = R.teams || [0, 1];
+        const col = k => { const i = tm[k]; return '<div class="c' + (R.winner === i ? ' win' : '') + '"><div class="t" style="color:' + esc(teamColor(i)) + '">' + esc(teamName(i)) + '</div><div class="n">' + fmtNum(R.a[k]) + unit + '</div><div class="d">' + fmt(tt('Sai lệch: {d}', 'Difference: {d}'), { d: fmtNum(R.d[k]) }) + '</div></div>'; };
+        const std = '<div class="c std"><div class="t">' + tt('ĐÁP ÁN CHUẨN', 'CORRECT ANSWER') + '</div><div class="n">' + fmtNum(R.c) + unit + '</div><div class="d">&nbsp;</div></div>';
+        const mid = Math.ceil(tm.length / 2);
+        cols = '<div class="cols n' + tm.length + '">' + tm.map((_, k) => (k === mid ? std : '') + col(k)).join('') + (mid >= tm.length ? std : '') + '</div>';
       }
       const msg = R ? (R.winner == null ? tt('Sai lệch bằng nhau: dùng câu ước lượng mới', 'Equal difference: a new estimation question is needed') : fmt(tt('{t} gần đáp án chuẩn hơn!', '{t} is closer!'), { t: teamName(R.winner) })) : '';
       const h = '<div class="ql">' + tt('CÂU HỎI ƯỚC LƯỢNG', 'ESTIMATION QUESTION') + (E.round > 1 ? ' · ' + E.round : '') + '</div><div class="qt">' + esc(qtxt) + (E.shown && E.unit && !R ? ' <small>(' + esc(E.unit) + ')</small>' : '') + '</div>' + cols + '<div class="msg">' + esc(msg) + '</div>';
@@ -319,11 +376,12 @@
       if (!pub.r) return;
       const w = pub.r.winner, nm = $('#rTeam');
       nm.textContent = teamName(w); nm.style.color = teamColor(w);
-      const len = teamName(w).length; nm.style.fontSize = (len > 10 ? Math.max(90, Math.round(200 * 10 / len)) : 200) + 'px';
+      fitText(nm, 1600, 200, 80);
       $('#rCong').textContent = tt('CHÚC MỪNG ĐỘI CHIẾN THẮNG', 'CONGRATULATIONS TO THE WINNER');
       $('#rTag').innerHTML = pub.r.via === 'tie' ? '<span>' + tt('Thắng vòng phụ', 'Tie-breaker Winner') + '</span>' : '';
       $('#rCap').textContent = tt('ĐIỂM VÒNG CHÍNH', 'MAIN ROUND SCORES');
-      $('#rScores').innerHTML = [0, 1].map(i => '<div class="r-sc' + (i === w ? ' w' : '') + '" style="--tc:' + esc(teamColor(i)) + '"><div class="n">' + esc(teamName(i)) + '</div><div class="s tnum">' + pub.scores[i] + '</div><div class="u">' + tt('điểm', 'pts') + '</div></div>').join('');
+      $('#rScores').className = 'r-scores n' + pub.scores.length;
+      $('#rScores').innerHTML = pub.scores.map((_, i) => '<div class="r-sc' + (i === w ? ' w' : '') + '" style="--tc:' + esc(teamColor(i)) + '"><div class="n">' + esc(teamName(i)) + '</div><div class="s tnum">' + pub.scores[i] + '</div><div class="u">' + tt('điểm', 'pts') + '</div></div>').join('');
       $('#rMsg').textContent = fmt(tt('Cảm ơn bạn đã cùng {n} tạo nên những khoảnh khắc đáng nhớ!', 'Thank you for making {n} unforgettable!'), { n: S().pname || 'THINK & MATCH' });
     }
 
@@ -374,16 +432,64 @@
       if (type === 'win') return celebrate();
       sfx.play(type === 'click' ? 'click' : type);
       const motion = pub.s.motion !== false;
-      if (type === 'match' && motion && pub.board) {
-        pub.board.tiles.forEach((t, i) => { if (t.s === 'o' && t.w) { const c = board.cellRect(i); if (c) { const pt = stagePoint(c); fx.burst(pt.x, pt.y, 60); } } });
-        stamp(tt('GHÉP ĐÚNG!', 'IT’S A MATCH!'), 'gold', false);
+      const m = pub.msg || {}, prac = m.k === 'prac';
+      // bảng thông báo kiểu bản trước: dải màu ngang trên bảng ô
+      if (type === 'right') {
+        const team = m.k === 'main' ? m.team : m.k === 'tie' ? m.answering : null;
+        banner('ok', tt('CHÍNH XÁC!', 'CORRECT!'), team != null ? fmt(tt('MỜI {t} LẬT 2 Ô', '{t}, FLIP 2 TILES'), { t: teamName(team).toUpperCase() }) : tt('MỜI LẬT 2 Ô', 'FLIP 2 TILES'), 1900);
+        if (motion) { fx.burst(700, 520, 70); fx.burst(1220, 520, 70); }
+      } else if (type === 'wrong' || type === 'timeout') {
+        const flipOut = (m.k === 'main' || m.k === 'tie' || prac) && m.phase === 'resolve';
+        banner(type === 'timeout' ? 'to' : 'no', type === 'timeout' ? (flipOut ? tt('HẾT GIỜ LẬT Ô', 'FLIP TIME IS UP') : tt('HẾT GIỜ!', 'TIME’S UP!')) : tt('CHƯA CHÍNH XÁC', 'INCORRECT'), flipOut ? tt('Không cộng điểm', 'No points') : turnLine(m), 2100);
+      } else if (type === 'match' && pub.board) {
+        const open = pub.board.tiles.map((t, i) => (t.s === 'o' && t.w ? i : -1)).filter(i => i >= 0);
+        if (motion) open.forEach(i => { const c = board.cellRect(i); if (c) { const pt = stagePoint(c); fx.burst(pt.x, pt.y, 80); } });
+        if (motion) fx.rain(1500, 4);
+        if (prac) banner('win', tt('GHÉP ĐÚNG!', 'IT’S A MATCH!'), tt('Chơi thử: không tính điểm', 'Practice: no points'), 2000, open);
+        else if (m.k === 'tie') banner('win', tt('CHIẾN THẮNG!', 'WINNER!'), fmt(tt('{t} tìm được cặp quyết định', '{t} found the decisive pair'), { t: teamName(m.answering) }), 2800, null);
+        else banner('win', tt('GHÉP ĐÚNG!', 'IT’S A MATCH!'), fmt(tt('+1 điểm cho {t}', '+1 point for {t}'), { t: teamName(m.team) }), 2200, open);
+      } else if (type === 'miss' && pub.board && pub.stage !== 'estimate') {
+        const open = pub.board.tiles.map((t, i) => (t.s === 'o' && t.x ? i : -1)).filter(i => i >= 0);
+        if (open.length) banner('no', tt('CHƯA KHỚP', 'NO MATCH'), fmt(tt('Ghi nhớ vị trí: {n} giây', 'Memorize: {n}s'), { n: Math.ceil((S().times || {}).hold || 5) }), Math.round(((S().times || {}).hold || 5) * 1000) + 600, open);
+      } else if (type === 'boom') {
+        if (pub.stage === 'tie' && pub.tie && !pub.tie.started) banner('info', tt('HÒA ĐIỂM!', 'IT’S A TIE!'), tt('Vòng phụ: Cặp hình quyết định', 'Tie-breaker: Decisive Pair'), 3500);
+        else if (pub.stage === 'estimate') banner('info', tt('CÂU HỎI ƯỚC LƯỢNG', 'ESTIMATION QUESTION'), tt('Đội có đáp án gần đúng nhất sẽ thắng', 'The closest answer wins'), 3200);
       }
-      if (!motion) return;
-      if (type === 'qpick') pickCard();
-      else if (type === 'qopen') openCard();
-      else if (type === 'right') { stamp(tt('CHÍNH XÁC!', 'CORRECT!'), 'ok', false); fx.burst(760, 470, 90); fx.burst(1160, 470, 90); setTimeout(() => fx.burst(960, 380, 120), 250); fx.rain(2600, 4); }
-      else if (type === 'wrong') { stamp(tt('CHƯA CHÍNH XÁC!', 'INCORRECT!'), 'no', true); flash('no'); }
-      else if (type === 'timeout') { stamp(tt('HẾT GIỜ!', 'TIME’S UP!'), 'to', true); flash('to'); }
+      if (motion && type === 'qpick') pickCard();
+    }
+    // dòng phụ sau khi trả lời sai / hết giờ
+    function turnLine(m) {
+      if (m.k === 'prac') return tt('Lượt chơi thử kết thúc', 'Practice turn over');
+      if (m.k === 'main' && m.phase === 'question') return fmt(tt('Lượt chuyển sang {t}', 'Turn passes to {t}'), { t: teamName(m.team) });
+      if (m.k === 'tie' && m.cur && m.wrongTeam != null) return m.answering != null ? fmt(tt('{t} được quyền trả lời', '{t} may answer now'), { t: teamName(m.answering) }) : tt('Đội khác giành quyền trả lời', 'Another team may buzz in');
+      return '';
+    }
+    let bannerT = 0, bannerT2 = 0;
+    const BIC = {
+      // mặt cười tươi (đúng), mặt buồn rơi nước mắt (sai), mặt lo lắng (hết giờ), mặt mắt sao (ghép đúng)
+      ok: '<svg viewBox="0 0 24 24" class="face"><path d="M5.6 9.4q1.9-2.4 3.8 0M14.6 9.4q1.9-2.4 3.8 0"/><path class="fill" d="M5.2 12.6h13.6q-.7 7-6.8 7t-6.8-7z"/><path class="tongue" d="M9.4 17.6q2.6-2 5.2 0q-1.2 1.4-2.6 1.4t-2.6-1.4z"/></svg>',
+      no: '<svg viewBox="0 0 24 24" class="face"><path d="M5.4 8.4l3.6-1.4M18.6 8.4l-3.6-1.4"/><circle class="fill" cx="8" cy="11" r="1.5"/><circle class="fill" cx="16" cy="11" r="1.5"/><path d="M7.4 18.4q4.6-4.6 9.2 0"/><path class="tear" d="M6.6 13.6q-1.8 2.8 0 3.8 1.8-1 0-3.8z"/></svg>',
+      to: '<svg viewBox="0 0 24 24" class="face"><path d="M5.6 7.6l3.2.9M18.4 7.6l-3.2.9"/><circle class="fill" cx="8" cy="11" r="2"/><circle class="fill" cx="16" cy="11" r="2"/><ellipse class="fill" cx="12" cy="17" rx="2.4" ry="2.9"/></svg>',
+      win: '<svg viewBox="0 0 24 24" class="face"><path class="fill" d="M7.6 5.2l1.2 2.5 2.7.4-2 1.9.5 2.7-2.4-1.3-2.4 1.3.5-2.7-2-1.9 2.7-.4zM16.4 5.2l1.2 2.5 2.7.4-2 1.9.5 2.7-2.4-1.3-2.4 1.3.5-2.7-2-1.9 2.7-.4z"/><path class="fill" d="M5 13.6h14q-.7 6.4-7 6.4t-7-6.4z"/><path class="tongue" d="M9.2 18.2q2.8-2 5.6 0q-1.2 1.6-2.8 1.6t-2.8-1.6z"/></svg>',
+      info: '<svg viewBox="0 0 24 24"><path d="M12 3v18M5 7h14M7 7l-3 7h6zM17 7l-3 7h6z"/></svg>',
+    };
+    // Dải thông báo: trượt vào từ trái (nền chéo, biểu tượng bật ra, chữ hiện dần, vệt sáng quét qua), rồi trượt ra bên phải
+    function banner(kind, l1, l2, ms, tile) {
+      const b = $('#banner'); clearTimeout(bannerT); clearTimeout(bannerT2);
+      b.className = 'banner ' + kind; b.querySelector('.b1').textContent = l1;
+      b.querySelector('.bic').innerHTML = BIC[kind] || '';
+      const s2 = b.querySelector('.b2'); s2.textContent = l2 || ''; s2.style.display = l2 ? 'block' : 'none';
+      // đặt dải thông báo sát hàng ô vừa lật (bên dưới, hết chỗ thì bên trên) để vẫn thấy hai hình; không có ô thì giữa bảng
+      let top = 694 / 2 - 85;
+      const cs = (Array.isArray(tile) ? tile : tile != null ? [tile] : []).map(i => board.cellRect(i)).filter(Boolean), ba = $('#barea');
+      if (cs.length && ba) {
+        const k = stage.getBoundingClientRect().width / 1920 || 1, br = ba.getBoundingClientRect();
+        const rt = Math.min(...cs.map(c => c.getBoundingClientRect().top - br.top)) / k, rb = Math.max(...cs.map(c => c.getBoundingClientRect().bottom - br.top)) / k;
+        top = rb + 12 + 170 <= 694 ? rb + 12 : rt - 12 - 170 >= 0 ? rt - 12 - 170 : (rt + rb) / 2 - 85;
+      }
+      b.style.top = Math.max(0, Math.min(694 - 170, top)) + 'px';
+      void b.offsetWidth; b.classList.add('show');
+      bannerT = setTimeout(() => { b.classList.add('out'); bannerT2 = setTimeout(() => b.classList.remove('show', 'out'), 520); }, ms || 2000);
     }
     /* ---------- hiệu ứng lớp phủ (không chặn thao tác bấm) ---------- */
     const fxo = $('#fxo');
@@ -409,25 +515,6 @@
       const sp = srcPoint(), T = 2600 * hold + 900;
       anim(el, [at(sp, 0.06, 0.2, -20), Object.assign(at(C0, 1.08, 1, 3), { offset: 0.22 }), Object.assign(at(C0, 1, 1, 0), { offset: 0.3 }), Object.assign(at(C0, 1, 1, 0), { offset: 0.78 }), at(SIDE, 0.25, 0, 0)], T);
     }
-    function openCard() {
-      let label = '', text = '';
-      const m = pub.msg;
-      if (pub.stage === 'estimate' && pub.est && pub.est.q) { label = tt('CÂU HỎI ƯỚC LƯỢNG', 'ESTIMATION QUESTION'); text = P(pub.est.q); }
-      else if (m && m.cur && m.cur.q) { label = TM.qLabel(m.cur.ref); text = P(m.cur.q); }
-      if (!text) return;
-      const el = addFx('fxcard q', '<small>' + esc(label) + '</small><b style="font-size:' + (text.length > 140 ? 44 : text.length > 80 ? 52 : 62) + 'px">' + esc(text) + '</b>');
-      const T = 3600 * hold + 700;
-      anim(el, [Object.assign(at(C0, 0.3, 0, 0), { transform: 'translate(-50%,-50%) translateY(20px) scale(.3) rotateX(70deg)' }), Object.assign(at(C0, 1.05, 1), { offset: 0.14 }), Object.assign(at(C0, 1, 1), { offset: 0.2 }), Object.assign(at(C0, 1, 1), { offset: 0.8 }), at(SIDE, 0.3, 0)], T);
-    }
-    function stamp(text, kind, shake) {
-      const el = addFx('fxstamp ' + kind, esc(text) + (kind === 'no' ? '<span class="xm">' + IC.x + '</span>' : ''));
-      const T = 1900 * hold + 500;
-      const f = [{ transform: 'translate(-50%,-50%) scale(2.6) rotate(-8deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(.92) rotate(-4deg)', opacity: 1, offset: 0.12 }, { transform: 'translate(-50%,-50%) scale(1) rotate(-4deg)', opacity: 1, offset: 0.18 }];
-      if (shake) [-26, 22, -16, 10, 0].forEach((dx, k) => f.push({ transform: 'translate(calc(-50% + ' + dx + 'px),-50%) scale(1) rotate(-4deg)', opacity: 1, offset: 0.22 + k * 0.04 }));
-      f.push({ transform: 'translate(-50%,-50%) scale(1) rotate(-4deg)', opacity: 1, offset: 0.8 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(-4deg)', opacity: 0 });
-      anim(el, f, T);
-    }
-    function flash(kind) { const el = addFx('fxflash ' + kind, ''); anim(el, [{ opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 0.6, offset: 0.4 }, { opacity: 0 }], 1400); }
     function celebrate() {
       duckMusic();
       if (localSound && pub.s.sfx !== false) {
