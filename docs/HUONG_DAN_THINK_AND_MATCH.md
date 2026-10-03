@@ -1,58 +1,80 @@
-# THINK & MATCH: hướng dẫn nhanh cho MC
+# THINK & MATCH: hướng dẫn nhanh
 
-## 1. Mở game
-- **Một file**: mở `THINK_AND_MATCH.html` bằng Chrome hoặc Edge. Game chạy offline, không cần mạng. Bấm **F** để vào toàn màn hình, máy chiếu nên đặt 16:9.
-- **Webapp localhost**: giải nén `ThinkMatch_WebApp.zip` rồi chạy `CHAY_THINK_MATCH_Windows.bat` (Windows) hoặc `CHAY_THINK_MATCH_Mac.command` (Mac). Game mở ở http://localhost:8686. Giữ cửa sổ đen mở trong suốt chương trình.
-- Hãy cài đặt trên chính máy trình chiếu. Dữ liệu được lưu trong trình duyệt của máy đó.
+Bản web có hai trang:
+- **Trang MC/Admin**: `https://www.skechjoy.com/admin`. Trang này cần đăng nhập và dùng để điều khiển trận.
+- **Màn hình người chơi**: `https://www.skechjoy.com`. Trang này chỉ hiển thị, không cần tài khoản, và đưa lên máy chiếu.
 
-## 2. Cài đặt (nút CÀI ĐẶT ở màn hình chào hoặc biểu tượng bánh răng)
-- **A. Chung & đội chơi**: tên chương trình (mặc định THINK & MATCH), tên 2 đội và ngôn ngữ. Tên chương trình và tên đội giữ đúng như bạn gõ ở cả hai ngôn ngữ.
-- **B. Thời gian**: vòng chính 24 phút, trả lời 30 giây, lật ô 20 giây, ghi nhớ 5 giây, vòng phụ 2 phút. Bạn có thể đổi tùy ý.
-- **C. Câu hỏi**: có 4 nhóm.
-  - Câu chính: 24 câu.
-  - Câu dự phòng: 6 câu.
-  - Câu vòng phụ: tối đa 5 câu.
-  - Câu ước lượng: đáp án phải là số.
-  - Mỗi câu có ô **Tiếng Việt**, ô **English** và **Đáp án** (chỉ MC thấy). Nếu bỏ trống ô English, game hiện nội dung tiếng Việt và không tự dịch. Bộ câu mẫu có nhãn [Demo], hãy thay bằng câu thật.
-- **D. Hình ảnh**: thay logo, ảnh nền, **ảnh ẩn sau bảng** và các ảnh giày (8 ảnh cho bảng chính, ảnh cặp và 2 hình lẻ cho vòng phụ, ảnh chơi thử). Có thể chọn nhiều ảnh cùng lúc.
-- **E. Âm thanh**: tải nhạc nền (MP3/WAV), chỉnh bật/tắt, âm lượng và lặp lại. Bạn cũng có thể tải nhạc chúc mừng (fanfare); nếu không tải, game dùng nhạc tổng hợp sẵn.
-- Bấm **Lưu cài đặt**. Đổi ngôn ngữ VI/EN bất cứ lúc nào, trận đấu không bị reset.
+Hai trang đồng bộ qua máy chủ (Vercel + Supabase), nên có thể chạy trên hai máy khác nhau.
 
-## 3. Chơi thử (khoảng 3 phút đầu)
-- Bấm **CHƠI THỬ** ở màn hình chào.
-- Chơi thử dùng bảng riêng, không tính điểm và không ảnh hưởng bảng chính.
+## 0. Cài đặt một lần (Admin)
+1. Mở Supabase của dự án, chọn **SQL Editor** rồi **New query**.
+2. Dán toàn bộ tệp `setup.sql` vào và bấm **Run**. Tệp nằm ở `https://www.skechjoy.com/setup.sql`, hoặc bấm nút **Sao chép SQL** trên trang /admin.
+3. Dòng kết quả cuối là **MA_KHOI_TAO** (8 ký tự). Hãy ghi lại mã này.
+4. Mở `/admin`, nhập mã khởi tạo, email và mật khẩu (ít nhất 8 ký tự) để tạo tài khoản Admin đầu tiên. Mã chỉ dùng được một lần.
+5. Vào tab **Tài khoản** để tạo thêm tài khoản MC nếu cần.
 
-## 4. Vòng chính (16 ô, 8 cặp, 24 phút)
-1. Bấm **BẮT ĐẦU**, kiểm tra tên đội, chọn đội đi trước, rồi bấm **BẮT ĐẦU VÒNG CHÍNH**.
-2. Chọn số câu hỏi trên bảng MC và đọc to (có thể bấm **Hiện câu hỏi lớn** để chiếu lên màn hình). Sau đó bấm **Bắt đầu tính giờ** 30 giây.
-3. Bấm **TRẢ LỜI ĐÚNG** hoặc **TRẢ LỜI SAI**.
-   - Đúng: đội đọc số ô và MC bấm tối đa 2 ô trong 20 giây.
-   - Khớp: đội được +1 điểm, cặp ô biến mất và để lộ 2 ô của ảnh ẩn.
-   - Không khớp: 2 ô mở 5 giây rồi úp lại.
-   - Sai hoặc hết giờ: không được lật ô.
-4. Hai đội luôn đổi lượt, kể cả khi tìm được cặp.
-5. Khi dùng hết 24 câu chính, các câu dự phòng B1–B6 mở ra. Khi hết cả câu dự phòng, game báo để MC **thêm câu** hoặc **kết thúc vòng chính**.
-6. Vòng chính kết thúc khi tìm đủ 8 cặp hoặc hết giờ. Nếu một cặp đang lật dở, game cho lật xong rồi mới chốt kết quả.
+Mật khẩu do Supabase lưu dạng mã hóa, không nằm trong mã trang web. Mọi thao tác quản trị đều được máy chủ kiểm tra quyền. Người chưa đăng nhập mở thẳng `/admin` chỉ thấy màn hình đăng nhập.
 
-## 5. Vòng phụ khi hòa điểm (4 ô: 1 cặp và 2 ô lẻ, tối đa 2 phút)
-1. Bấm **BẮT ĐẦU VÒNG PHỤ**, chọn câu hỏi phụ và đọc. Đội bấm chuông trước, MC bấm chọn đội đó.
-2. Đúng: đội lật 2 ô. Tìm được cặp là **thắng ngay**. Không khớp thì sang câu mới.
-3. Sai: đội còn lại trả lời cùng câu đó. Cả hai cùng sai thì sang câu mới.
-4. Hết 2 phút hoặc hết câu hỏi phụ thì chuyển sang **câu ước lượng**.
-   - MC nhập đáp án chuẩn và câu trả lời của hai đội, rồi bấm **SO SÁNH**.
-   - Đội có sai lệch nhỏ hơn thắng. Nếu sai lệch bằng nhau, dùng câu ước lượng mới. Game không bao giờ chọn ngẫu nhiên.
+## 1. Quyền của từng vai trò
+- **Admin**: có mọi quyền của MC, cộng thêm thêm/sửa/xóa câu hỏi, nhập/xuất ngân hàng câu hỏi và quản lý tài khoản.
+- **MC**: điều khiển trận, sửa tên chương trình, tên đội, thời gian, ngôn ngữ, hình ảnh, nhạc, và chọn câu hỏi khi chơi.
+- **Màn hình người chơi**: chỉ xem tên chương trình, đội, điểm, đồng hồ, câu hỏi đã công bố, kết quả, bảng ô và hiệu ứng. Trang này không bao giờ nhận đáp án chưa công bố hay vị trí hình ẩn.
 
-## 6. Công bố kết quả
-- Màn kết quả có pháo hoa, nhạc chúc mừng (nhạc nền tự giảm âm lượng), tên đội thắng và điểm vòng chính. Nếu thắng ở vòng phụ, màn hình có thêm nhãn "Thắng vòng phụ".
-- Màn hình giữ nguyên cho đến khi MC bấm **Phát lại chúc mừng**, **Chơi lại** hoặc **Về màn hình chào**.
+## 2. Mở màn hình trình chiếu
+- Trên trang MC, bấm **Mở màn hình người chơi**. Một cửa sổ mới mở ra; kéo cửa sổ đó sang máy chiếu rồi bấm biểu tượng toàn màn hình (hoặc nhấp đúp).
+- Bạn cũng có thể mở `https://www.skechjoy.com` trên một máy khác nối với máy chiếu.
+- Bấm vào màn hình người chơi một lần để trình duyệt cho phép phát âm thanh.
+- Đóng rồi mở lại cửa sổ, hay mất mạng rồi có mạng lại, màn hình vẫn hiện đúng trạng thái trận đang chơi.
+- Góc trên trang MC hiện tình trạng đồng bộ: **Đồng bộ trực tiếp** (xanh) là tốt nhất; **Mất kết nối** (đỏ) nghĩa là cần kiểm tra mạng.
 
-## 7. Mẹo vận hành
-- **Tạm dừng toàn bộ**: bấm nút ⏸ hoặc phím **P**. Mọi đồng hồ và hiệu ứng đang chờ đều dừng.
-- Mỗi đồng hồ trong bảng MC có nút Tạm dừng/Tiếp tục và Đặt lại riêng.
-- Phím **H** thu gọn hoặc mở bảng MC, phím **M** bật/tắt âm thanh. Đáp án chỉ hiện khi MC bấm **Xem đáp án**, nên hãy thu gọn bảng MC nếu màn hình MC cũng là màn chiếu.
-- **Chỉnh điểm** dùng để sửa điểm thủ công khi cần. **Chơi lại** giữa trận sẽ hỏi xác nhận trước.
-- Nếu lỡ tải lại trang, trận đấu được khôi phục ở trạng thái tạm dừng.
-- **Lưu trữ**:
-  - Ảnh tải lên được lưu trong trình duyệt. Nếu ảnh quá lớn, game báo là chỉ dùng được trong phiên hiện tại.
-  - Nhạc nền và fanfare được lưu bằng IndexedDB. Nếu trình duyệt chặn, nhạc vẫn phát trong phiên nhưng cần tải lại khi mở lần sau.
-- Âm thanh chỉ phát sau lần bấm đầu tiên, do trình duyệt quy định.
+## 3. Hai chế độ chọn ô (Điều khiển → Chế độ chọn ô)
+- **Trình chiếu (mặc định)**: người chơi đọc số ô, MC bấm ô đó trên bảng thu nhỏ trong trang MC. Màn hình ngoài lật ô ngay.
+- **Tương tác**: người chơi chạm trực tiếp vào màn hình cảm ứng.
+  1. Trên trang MC, bấm **Tạo mã ghép nối**. Mã có 6 số, dùng được trong 10 phút.
+  2. Trên màn hình cảm ứng, bấm biểu tượng bàn tay ở góc trên rồi nhập mã.
+  3. Chỉ màn hình đã ghép nối mới chọn được ô, và chỉ sau khi MC chấm **Đúng**. Mọi màn hình khác chỉ xem.
+  4. Máy chủ kiểm tra tối đa 2 ô mỗi lượt. Nếu màn hình mất kết nối, việc chọn ô tạm khóa đến khi đồng bộ lại.
+  5. Bấm **Hủy ghép nối** để thu hồi quyền của màn hình đó.
+
+## 4. Điều khiển một lượt (vòng chính)
+1. Bấm **Trận mới**. Hộp thoại hiện số câu hỏi và cảnh báo nếu thiếu câu hỏi, đáp án hoặc hình. Nhập tên hai đội và chọn đội đi trước. Vị trí hình được đảo tự động.
+2. Bấm **BẮT ĐẦU VÒNG CHÍNH**.
+3. Chọn số câu hỏi. Nội dung và đáp án chỉ hiện trên trang MC; màn hình ngoài hiện “Mời đội … chuẩn bị”.
+4. Bấm **BẮT ĐẦU TÍNH GIỜ**: câu hỏi hiện lên màn hình ngoài và đồng hồ trả lời chạy. Bấm nhiều lần cũng không tạo thêm đồng hồ.
+5. Dùng một trong ba nút:
+   - **Xem đáp án**: dừng giờ và hiện “Đáp án: …”. Chưa chấm điểm, chưa cho lật ô.
+   - **Đúng**: hiện “Chính xác: …” và “Mời đội … lật 2 ô!”, rồi chạy đồng hồ lật ô. Đội chỉ được điểm khi lật trúng một cặp.
+   - **Sai**: hiện “Chưa chính xác! Đáp án đúng: …”, không cho lật ô và chuyển lượt.
+6. Kết quả lật ô:
+   - Trúng cặp: +1 điểm, hai ô biến mất và lộ ảnh nền.
+   - Không trúng: hai ô mở trong thời gian ghi nhớ, hiện dấu X rồi úp lại.
+   - Hết giờ lật: ô úp lại, không có điểm.
+
+## 5. Vòng phụ và câu ước lượng
+- Khi hòa điểm, bấm **BẮT ĐẦU VÒNG PHỤ**, chọn câu, bấm **CÔNG BỐ CÂU HỎI**, rồi bấm tên đội giành quyền trả lời.
+- Nếu đội đầu trả lời sai, đội còn lại được trả lời cùng câu. Trong lúc đó đáp án được giữ kín và nút **Xem đáp án** bị khóa.
+- Muốn công bố sớm, bấm “Bỏ qua quyền trả lời…”. Hệ thống sẽ hỏi xác nhận, vì thao tác này kết thúc quyền trả lời của cả hai đội.
+- Khi hết giờ vòng phụ hoặc hết câu, game chuyển sang câu ước lượng: công bố câu, nhập đáp án hai đội, bấm **SO SÁNH**, rồi **CÔNG BỐ ĐỘI THẮNG**.
+
+## 6. Đảo vị trí hình (Shuffle Board)
+- Nút **Đảo vị trí hình** nằm trong khung Trận đấu. Trước khi vòng bắt đầu, bạn có thể bấm nhiều lần.
+- Khi vòng đã bắt đầu, hệ thống hỏi xác nhận. Đảo hình sẽ chơi lại vòng hiện tại:
+  - Ở vòng chính, điểm vòng chính bị xóa.
+  - Ở vòng phụ, điểm vòng chính được giữ.
+  - Câu hỏi và cài đặt không bị xóa.
+
+## 7. Ngân hàng câu hỏi (Admin)
+- Có 4 nhóm: vòng chính, dự phòng, vòng phụ, ước lượng.
+  - Mỗi câu có mã cố định, nội dung và đáp án Tiếng Việt/English.
+  - Câu ước lượng có thêm đáp án số và đơn vị.
+- Bạn có thể tìm kiếm, lọc theo nhóm, thêm, sửa, xóa (có xác nhận) và **Bật/Tắt** câu hỏi mà không cần xóa.
+- **Trận mới** chụp lại các câu đang Bật. Sửa ngân hàng giữa trận chỉ áp dụng cho trận sau.
+  - Mỗi câu chỉ dùng một lần trong trận.
+  - Trận mới thì dùng lại được cả bộ.
+- Số câu không cố định: mặc định 24 câu chính, 6 dự phòng, 5 câu phụ, 3 câu ước lượng. Thêm hoặc tắt câu để thay đổi.
+- Tùy chọn **Xáo trộn thứ tự câu hỏi khi tạo trận mới** độc lập với đảo vị trí hình.
+- **Xuất JSON** để sao lưu. **Nhập JSON** có kiểm tra dữ liệu và cho chọn Gộp hoặc Thay thế toàn bộ (thay thế phải xác nhận thêm lần nữa).
+- Xóa câu hỏi không làm mất lịch sử các trận đã chơi (tab **Lịch sử**).
+
+## 8. Bản offline dự phòng
+Tệp `legacy-offline.html` là bản cũ chạy trên một máy, không có đăng nhập. Chỉ dùng khi không có mạng.
