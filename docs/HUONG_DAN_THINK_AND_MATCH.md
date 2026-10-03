@@ -29,6 +29,9 @@ Mật khẩu do Supabase lưu dạng mã hóa, không nằm trong mã trang web.
 - MC bấm gì thì màn hình trình chiếu đổi theo ngay (về màn hình chào, vào trận, kết quả). Khung MC có đáp án nhưng màn hình trình chiếu không bao giờ nhận đáp án chưa công bố.
 - **Chơi thử**: bấm trên màn hình chào, chơi một lượt trên bảng 4 ô không tính điểm, rồi bấm **KẾT THÚC CHƠI THỬ** để quay lại màn hình chính.
 
+- Màn hình trình chiếu có **bảng số câu hỏi** bên phải để các đội chọn câu (câu đã dùng bị gạch, câu đang chọn sáng vàng). Không có nội dung hay đáp án trong bảng này.
+- Hiệu ứng: MC bấm số câu thì thẻ câu hỏi bay ra giữa màn hình; bấm Bắt đầu tính giờ thì câu hỏi hiện lớn rồi thu vào khung bên phải; Đúng thì chữ CHÍNH XÁC và tung hoa giấy; Sai thì chữ CHƯA CHÍNH XÁC rung lắc, viền đỏ; hết giờ thì HẾT GIỜ. Tắt hiệu ứng trong Cài đặt → Khác.
+
 ## 3. Mở màn hình trình chiếu
 - Bấm biểu tượng màn hình ở góc trên trang MC (hoặc **Cài đặt → Mở màn hình trình chiếu**). Kéo cửa sổ mới sang máy chiếu rồi bấm biểu tượng toàn màn hình (hoặc nhấp đúp).
 - Hoặc mở `https://www.skechjoy.com` trên một máy khác nối với máy chiếu.

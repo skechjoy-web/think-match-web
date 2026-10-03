@@ -100,3 +100,42 @@
 .host .pauseov{top:104px;border-radius:24px 24px 0 0}
 .panel .note-box{display:block}
 .panel .note-box b{display:inline}
+
+/* bảng số câu hỏi trên màn hình trình chiếu (để các đội chọn câu) */
+.pgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.pgrid.tie{grid-template-columns:repeat(5,1fr)}
+.pgrid i{font-style:normal;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;background:linear-gradient(180deg,rgba(58,149,255,.35),rgba(23,103,230,.28));border:2px solid rgba(160,210,255,.5);color:#fff;transition:all .3s}
+.pgrid i.bk{border-color:rgba(255,200,61,.6)}
+.pgrid i.lock{opacity:.35}
+.pgrid i.used{background:transparent;border-style:dashed;border-color:rgba(160,210,255,.22);color:rgba(255,255,255,.25);text-decoration:line-through}
+.pgrid i.sel{background:linear-gradient(180deg,#ffd76a,#ffb20f);border-color:#fff;color:#2a1a00;box-shadow:0 0 0 4px rgba(255,200,61,.35),0 0 30px rgba(255,200,61,.7);animation:selpulse 1.2s ease-in-out infinite}
+@keyframes selpulse{50%{transform:scale(1.08)}}
+.msgp .mbody{flex:1;min-height:0;display:flex;flex-direction:column;gap:16px}
+.msgp.hasgrid{gap:16px;padding:28px 30px 26px}
+.msgp.hasgrid .qt{font-size:36px}
+.msgp.hasgrid .qt.sm{font-size:26px}
+.msgp.hasgrid .big{font-size:50px}
+.msgp.hasgrid .ans{font-size:30px;padding:16px 20px}
+.msgp.hasgrid .ans .h{font-size:34px}
+.msgp.hasgrid .call{font-size:36px;padding:18px 20px}
+.msgp.hasgrid .res{font-size:34px;padding:16px 20px}
+.msgp.hasgrid .sub{font-size:24px}
+
+/* hiệu ứng lớp phủ: chọn câu, hiện câu hỏi, đúng, sai, hết giờ */
+.fxo{position:absolute;inset:0;z-index:35;pointer-events:none;overflow:hidden;perspective:1400px}
+.fxcard{position:absolute;left:50%;top:50%;width:1120px;transform:translate(-50%,-50%);border-radius:40px;padding:52px 64px 58px;text-align:center;background:linear-gradient(160deg,#2a6fe8,#0a2a78 70%);border:4px solid #9fd6ff;box-shadow:0 0 0 10px rgba(95,212,255,.22),0 0 120px rgba(63,182,255,.55),0 50px 140px rgba(0,0,0,.6);overflow:hidden}
+.fxcard::before{content:"";position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 70%,rgba(255,255,255,.18) 80%,transparent 90%);animation:spin 2.4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fxcard small{position:relative;display:inline-block;font-size:34px;font-weight:900;letter-spacing:.2em;color:var(--gold);border:3px solid var(--gold);border-radius:40px;padding:6px 28px;background:rgba(0,0,0,.25)}
+.fxcard b{position:relative;display:block;font-size:84px;font-weight:900;font-style:italic;margin-top:26px;line-height:1.12;overflow-wrap:anywhere}
+.fxcard b .tn{color:var(--tc,#fff);text-shadow:0 0 30px rgba(255,255,255,.35)}
+.fxcard.q b{font-style:normal;font-weight:800;line-height:1.25}
+.fxstamp{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-size:150px;font-weight:900;font-style:italic;white-space:nowrap;padding:10px 60px;border-radius:30px;border:8px solid currentColor;background:rgba(3,10,31,.72);display:flex;align-items:center;gap:30px;text-shadow:0 0 40px currentColor}
+.fxstamp.ok{color:#5dffb7}
+.fxstamp.no{color:#ff5d73}
+.fxstamp.to{color:#ffb020}
+.fxstamp.gold{color:var(--gold);font-size:110px}
+.fxstamp .xm{width:150px;height:150px;display:inline-block}
+.fxflash{position:absolute;inset:0;box-shadow:inset 0 0 260px 80px rgba(255,40,60,.75)}
+.fxflash.to{box-shadow:inset 0 0 260px 80px rgba(255,160,20,.7)}
+.fxstamp.no{font-size:128px}

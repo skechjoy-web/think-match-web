@@ -527,6 +527,9 @@
     h += '<label><span>' + tt('Âm lượng nhạc nền', 'Music volume') + '</span><input type="range" min="0" max="1" step="0.05" data-r="musicVol" value="' + D.musicVol + '"></label>';
     h += '<label class="chk"><input type="checkbox" data-b="musicLoop"' + (D.musicLoop ? ' checked' : '') + '>' + tt('Lặp lại nhạc nền', 'Loop music') + '</label>';
     h += '<div class="fld"><span>' + tt('Nhạc chiến thắng', 'Victory music') + '</span><div class="muted">' + esc(D.fanfareName || (D.fanfareUrl ? tt('Đã có nhạc', 'Music set') : tt('Dùng nhạc có sẵn', 'Built-in fanfare'))) + '</div><button class="btn btn-ghost sm" data-up="fanfareUrl" data-kind="audio">' + tt('Tải nhạc', 'Upload') + '</button> <button class="btn btn-ghost sm" data-clear="fanfareUrl">' + tt('Xóa', 'Remove') + '</button></div></div>';
+    const SD = D.sounds || {};
+    h += '<div class="sec">' + tt('Âm thanh hiệu ứng', 'Sound effects') + '</div><p class="note">' + tt('Chọn tiếng cho từng lúc trong trận. Bấm ▶ để nghe thử trên máy này. Nếu đã tải “Nhạc chiến thắng” ở trên thì nhạc đó được dùng khi chúc mừng.', 'Pick a sound for each moment. Press ▶ to preview on this device. An uploaded victory music replaces the celebration sound.') + '</p><div class="sgrid">';
+    h += TM.SOUNDS.map(([k, vi, en, opts]) => { const cur = SD[k] || opts[0][0]; return '<label><span>' + (TM.lang === 'en' ? en : vi) + '</span><div class="row" style="margin:0;flex-wrap:nowrap"><select class="inp" data-snd="' + k + '">' + opts.map(o => '<option value="' + o[0] + '"' + (cur === o[0] ? ' selected' : '') + '>' + esc(TM.lang === 'en' ? o[2] : o[1]) + '</option>').join('') + '<option value="off"' + (cur === 'off' ? ' selected' : '') + '>' + tt('Tắt tiếng', 'Silent') + '</option></select><button class="btn btn-ghost" type="button" data-try="' + k + '" title="' + tt('Nghe thử', 'Preview') + '">▶</button></div></label>'; }).join('') + '</div>';
     h += '<div class="sec">' + tt('Khác', 'Other') + '</div><div class="sgrid">';
     h += '<label class="chk"><input type="checkbox" data-b="motion"' + (D.motion ? ' checked' : '') + '>' + tt('Hiệu ứng chuyển động & pháo hoa', 'Motion & fireworks') + '</label>';
     h += '<label class="chk"><input type="checkbox" data-b="shuffleQ"' + (D.shuffleQ ? ' checked' : '') + '>' + tt('Xáo trộn thứ tự câu hỏi khi tạo trận mới', 'Shuffle question order for new matches') + '</label>';
@@ -534,6 +537,7 @@
     h += '<div class="sticky-save"><span class="muted" id="setMsg">' + (setDirty ? tt('Có thay đổi chưa lưu', 'Unsaved changes') : '') + '</span><button class="btn btn-ghost" id="setReset">' + tt('Hoàn tác', 'Discard') + '</button><button class="btn btn-primary" id="setSave">' + tt('Lưu cài đặt', 'Save settings') + '</button></div>';
     $('#setForm').innerHTML = h;
   }
+  const tryPlayer = new TM.Sfx();
   function markDirty() { setDirty = true; const m = $('#setMsg'); if (m) m.textContent = tt('Có thay đổi chưa lưu', 'Unsaved changes'); }
   $('#setForm').addEventListener('input', e => {
     const t = e.target, D = draft; if (!D) return;
@@ -544,11 +548,13 @@
     else if (t.dataset.b) D[t.dataset.b] = t.checked;
     else if (t.dataset.r) D[t.dataset.r] = Number(t.value);
     else if (t.dataset.slot) { const [arr, i] = t.dataset.slot.split(':'); D[arr][+i] = +t.value; }
+    else if (t.dataset.snd) { D.sounds = Object.assign({}, D.sounds || {}); D.sounds[t.dataset.snd] = t.value; }
     else return;
     markDirty();
   });
   $('#setForm').addEventListener('click', async e => {
     const t = e.target.closest('button'); if (!t || !draft) return;
+    if (t.dataset.try) { const id = (draft.sounds || {})[t.dataset.try] || ($('[data-snd="' + t.dataset.try + '"]') || {}).value; tryPlayer.unlock(); tryPlayer.vol = draft.sfxVol == null ? 0.8 : draft.sfxVol; if (id && id !== 'off') setTimeout(() => tryPlayer.play(id), 60); return; }
     if (t.id === 'setSave') { const ok = await saveSettings(draft); if (ok) { draft = null; setDirty = false; renderSet(); } return; }
     if (t.id === 'setReset') { draft = null; setDirty = false; renderSet(); return; }
     if (t.dataset.clear) { const k = t.dataset.clear; if (k.startsWith('shoe:')) draft.shoes[+k.slice(5)] = ''; else { draft[k] = ''; if (k === 'musicUrl') draft.musicName = ''; if (k === 'fanfareUrl') draft.fanfareName = ''; } markDirty(); renderSet(); return; }

@@ -67,7 +67,7 @@
         '<div class="r-sc-cap" id="rCap"></div><div class="r-scores" id="rScores"></div><div class="r-msg" id="rMsg"></div>' +
         H('<div class="r-btns"><button class="btn btn-ghost" id="btnReplayFx"></button><button class="btn btn-ghost" id="btnPlayAgain"></button><button class="btn btn-ghost" id="btnResHome"></button></div>') +
       '</section>' +
-      '<canvas id="fx" width="1920" height="1080"></canvas>' +
+      '<div class="fxo" id="fxo"></div><canvas id="fx" width="1920" height="1080"></canvas>' +
       '<div class="conn" id="conn"><i></i><span class="t" id="connT"></span></div>' +
       '<div class="audiohint" id="audioHint"></div>' +
       '<div class="toast" id="toast"></div>' +
@@ -119,7 +119,7 @@
       document.documentElement.lang = TM.lang;
       stage.classList.toggle('no-motion', p.s.motion === false);
       stage.classList.toggle('paused', !!p.paused);
-      sfx.on = p.s.sfx !== false && localSound; sfx.vol = p.s.sfxVol == null ? 0.8 : p.s.sfxVol;
+      sfx.on = p.s.sfx !== false && localSound; sfx.vol = p.s.sfxVol == null ? 0.8 : p.s.sfxVol; sfx.map = p.s.sounds || {};
       if (p.gameId !== lastGame) { lastGame = p.gameId; lastSeq = null; }
       applyBranding();
       show(p.view === 'result' && p.r ? 'result' : p.view === 'game' ? 'game' : 'welcome');
@@ -235,7 +235,22 @@
       } else if (m.k === 'tie') {
         h = tieMsg(m);
       }
+      const grid = gridHTML();
+      if (grid) { const k = h.indexOf('</div>') + 6; h = h.slice(0, k) + grid + '<div class="mbody">' + h.slice(k) + '</div>'; }
+      el.classList.toggle('hasgrid', !!grid);
       if (el.dataset.h !== h) { el.dataset.h = h; el.innerHTML = h; }
+    }
+    // Bảng số câu hỏi để các đội chọn (chỉ số câu và trạng thái đã dùng, không có nội dung)
+    function gridHTML() {
+      const G = pub.qgrid; if (!G || pub.mode === 'practice') return '';
+      const cur = G.cur, cell = (s, i, label, used, lock, cls) => {
+        const sel = cur && cur.s === s && cur.i === i;
+        return '<i class="' + (sel ? 'sel ' : used ? 'used ' : lock ? 'lock ' : '') + (cls || '') + '" data-s="' + s + '" data-i="' + i + '">' + label + '</i>';
+      };
+      let h = '';
+      if (G.t) h = G.t.map((u, i) => cell('t', i, 'P' + (i + 1), u)).join('');
+      else h = (G.m || []).map((u, i) => cell('m', i, TM.pad(i + 1), u)).join('') + (G.b || []).map((u, i) => cell('b', i, 'B' + (i + 1), u, !G.bOpen, 'bk')).join('') + (G.x || []).map((u, i) => cell('x', i, '+' + (i + 1), u)).join('');
+      return '<div class="pgrid' + (G.t ? ' tie' : '') + '">' + h + '</div>';
     }
     function mainMsg(m) {
       let h = '';
@@ -247,8 +262,10 @@
           else h += '<div class="next">' + fmt(tt('{t} đang trả lời', '{t} is answering'), { t: tnHTML(m.team) }) + '</div>';
         } else if (!c && m.last) {
           h += tag(TM.qLabel(m.last.ref)) + verdictBlock(m.last, m.last.team, false) + '<div class="grow"></div><div class="next">' + fmt(tt('Lượt tiếp theo: {t}', 'Next turn: {t}'), { t: tnHTML(m.team) }) + '</div>';
+        } else if (c) {
+          h += tag(TM.qLabel(c.ref)) + getReady(m.team) + '<div class="sub">' + tt('Câu hỏi sẽ hiện khi MC bắt đầu tính giờ.', 'The question appears when the host starts the timer.') + '</div>';
         } else {
-          h += tag(tt('VÒNG CHÍNH', 'MAIN ROUND')) + getReady(m.team);
+          h += tag(tt('VÒNG CHÍNH', 'MAIN ROUND')) + getReady(m.team) + (pub.qgrid ? '<div class="sub">' + tt('Mời đội chọn một câu hỏi.', 'Please choose a question.') + '</div>' : '');
         }
       } else if (c) {
         h += tag(TM.qLabel(c.ref)) + (c.q ? '<div class="qt sm">' + esc(P(c.q)) + '</div>' : '');
@@ -356,10 +373,61 @@
       if (!pub) return;
       if (type === 'win') return celebrate();
       sfx.play(type === 'click' ? 'click' : type);
-      if (type === 'match' && pub.s.motion !== false && pub.board) {
+      const motion = pub.s.motion !== false;
+      if (type === 'match' && motion && pub.board) {
         pub.board.tiles.forEach((t, i) => { if (t.s === 'o' && t.w) { const c = board.cellRect(i); if (c) { const pt = stagePoint(c); fx.burst(pt.x, pt.y, 60); } } });
+        stamp(tt('GHÉP ĐÚNG!', 'IT’S A MATCH!'), 'gold', false);
       }
+      if (!motion) return;
+      if (type === 'qpick') pickCard();
+      else if (type === 'qopen') openCard();
+      else if (type === 'right') { stamp(tt('CHÍNH XÁC!', 'CORRECT!'), 'ok', false); fx.burst(760, 470, 90); fx.burst(1160, 470, 90); setTimeout(() => fx.burst(960, 380, 120), 250); fx.rain(2600, 4); }
+      else if (type === 'wrong') { stamp(tt('CHƯA CHÍNH XÁC!', 'INCORRECT!'), 'no', true); flash('no'); }
+      else if (type === 'timeout') { stamp(tt('HẾT GIỜ!', 'TIME’S UP!'), 'to', true); flash('to'); }
     }
+    /* ---------- hiệu ứng lớp phủ (không chặn thao tác bấm) ---------- */
+    const fxo = $('#fxo');
+    const C0 = { x: 960, y: 560 }, SIDE = { x: 1592, y: 586 };
+    const hold = host ? 0.55 : 1;
+    function addFx(cls, html) { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; fxo.appendChild(d); return d; }
+    function anim(el, frames, ms, done) {
+      if (!el.animate) { setTimeout(() => { el.remove(); if (done) done(); }, ms); return; }
+      const a = el.animate(frames, { duration: ms, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
+      a.onfinish = () => { el.remove(); if (done) done(); };
+    }
+    const at = (p, sc, op, rot) => ({ transform: 'translate(-50%,-50%) translate(' + (p.x - 960) + 'px,' + (p.y - 540) + 'px) scale(' + sc + ') rotate(' + (rot || 0) + 'deg)', opacity: op });
+    function srcPoint() {
+      const G = pub.qgrid, cur = G && G.cur; if (!cur) return C0;
+      const el = host ? $('#panel [data-act=select][data-s="' + cur.s + '"][data-i="' + cur.i + '"]') : $('#msgp .pgrid [data-s="' + cur.s + '"][data-i="' + cur.i + '"]');
+      return el ? stagePoint(el) : SIDE;
+    }
+    function pickCard() {
+      const G = pub.qgrid, m = pub.msg; if (!G || !G.cur) return;
+      const team = m && (m.k === 'main' ? m.team : null);
+      const who = team != null ? (TM.lang === 'en' ? 'Get ready, ' + teamRef(team) + '!' : 'Mời ' + teamRef(team) + ' chuẩn bị') : tt('Chuẩn bị trả lời', 'Get ready to answer');
+      const el = addFx('fxcard pick', '<small>' + esc(TM.qLabel(G.cur)) + '</small><b>' + who + '</b>');
+      const sp = srcPoint(), T = 2600 * hold + 900;
+      anim(el, [at(sp, 0.06, 0.2, -20), Object.assign(at(C0, 1.08, 1, 3), { offset: 0.22 }), Object.assign(at(C0, 1, 1, 0), { offset: 0.3 }), Object.assign(at(C0, 1, 1, 0), { offset: 0.78 }), at(SIDE, 0.25, 0, 0)], T);
+    }
+    function openCard() {
+      let label = '', text = '';
+      const m = pub.msg;
+      if (pub.stage === 'estimate' && pub.est && pub.est.q) { label = tt('CÂU HỎI ƯỚC LƯỢNG', 'ESTIMATION QUESTION'); text = P(pub.est.q); }
+      else if (m && m.cur && m.cur.q) { label = TM.qLabel(m.cur.ref); text = P(m.cur.q); }
+      if (!text) return;
+      const el = addFx('fxcard q', '<small>' + esc(label) + '</small><b style="font-size:' + (text.length > 140 ? 44 : text.length > 80 ? 52 : 62) + 'px">' + esc(text) + '</b>');
+      const T = 3600 * hold + 700;
+      anim(el, [Object.assign(at(C0, 0.3, 0, 0), { transform: 'translate(-50%,-50%) translateY(20px) scale(.3) rotateX(70deg)' }), Object.assign(at(C0, 1.05, 1), { offset: 0.14 }), Object.assign(at(C0, 1, 1), { offset: 0.2 }), Object.assign(at(C0, 1, 1), { offset: 0.8 }), at(SIDE, 0.3, 0)], T);
+    }
+    function stamp(text, kind, shake) {
+      const el = addFx('fxstamp ' + kind, esc(text) + (kind === 'no' ? '<span class="xm">' + IC.x + '</span>' : ''));
+      const T = 1900 * hold + 500;
+      const f = [{ transform: 'translate(-50%,-50%) scale(2.6) rotate(-8deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(.92) rotate(-4deg)', opacity: 1, offset: 0.12 }, { transform: 'translate(-50%,-50%) scale(1) rotate(-4deg)', opacity: 1, offset: 0.18 }];
+      if (shake) [-26, 22, -16, 10, 0].forEach((dx, k) => f.push({ transform: 'translate(calc(-50% + ' + dx + 'px),-50%) scale(1) rotate(-4deg)', opacity: 1, offset: 0.22 + k * 0.04 }));
+      f.push({ transform: 'translate(-50%,-50%) scale(1) rotate(-4deg)', opacity: 1, offset: 0.8 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(-4deg)', opacity: 0 });
+      anim(el, f, T);
+    }
+    function flash(kind) { const el = addFx('fxflash ' + kind, ''); anim(el, [{ opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 0.6, offset: 0.4 }, { opacity: 0 }], 1400); }
     function celebrate() {
       duckMusic();
       if (localSound && pub.s.sfx !== false) {
