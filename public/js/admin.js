@@ -363,7 +363,11 @@
     if (!priv || !e.target.closest('#stage')) return;
     const t = e.target, g = G();
     if (t.closest('.js-lang button')) return act('lang', { lang: t.closest('button').dataset.l });
-    if (t.closest('.js-music')) { if (!ST().musicUrl) return toast(tt('Chưa có nhạc nền: tải trong Cài đặt.', 'No music yet: upload it in Settings.'), 'err'); return act('music', { playing: !(g.music && g.music.playing) }); }
+    if (t.closest('.js-music')) {
+      if (!ST().musicUrl) return toast(tt('Chưa có nhạc nền: tải trong Cài đặt.', 'No music yet: upload it in Settings.'), 'err');
+      const on = !(g.music && g.music.playing);
+      return act('music', { playing: on }).then(r => { if (r && on && !scr.soundOn()) toast(tt('Đã bật nhạc nền trên màn hình trình chiếu. Loa của trang MC đang tắt nên máy này không phát; bấm biểu tượng loa ở góc trên nếu muốn nghe tại đây.', 'Music is on for the projection screen. The host page speaker is off, so this device stays silent; press the speaker icon at the top to hear it here.'), 'good', 6500); });
+    }
     if (t.closest('.js-open')) return openPlayer();
     if (t.closest('.js-settings')) return openSp();
     if (t.closest('#btnPause')) return act(g.paused ? 'resume' : 'pause');
@@ -454,7 +458,7 @@
   }
   async function addExtraDlg() {
     let v = null;
-    const ok = await dialog(tt('Thêm câu hỏi bổ sung', 'Add an extra question'), '<p class="note">' + tt('Dùng khi cần thêm câu ngoài bộ câu của trận. Câu này chỉ dùng cho trận đang chơi.', 'For a question outside this match’s set. It is only used in the current match.') + '</p><div class="fld"><span>' + tt('Câu hỏi', 'Question') + '</span><textarea class="inp" id="xq"></textarea></div><div class="fld"><span>' + tt('Đáp án', 'Answer') + '</span><input class="inp" id="xa"></div>',
+    const ok = await dialog(tt('Thêm câu hỏi bổ sung', 'Add an extra question'), '<p class="note">' + tt('Dùng khi cần thêm câu ngoài bộ câu của trận. Câu này chỉ dùng cho trận đang chơi.', 'For a question outside this match’s set. It is only used in the current match.') + '</p><div class="fld"><span>' + tt('Câu hỏi', 'Question') + '</span><textarea class="inp" id="xq" rows="4"></textarea></div><div class="fld"><span>' + tt('Đáp án', 'Answer') + '</span><input class="inp" id="xa"></div>',
       [{ label: tt('Hủy', 'Cancel'), value: false }, { label: tt('Thêm & chọn câu này', 'Add & select'), cls: 'btn-primary', value: true, check: () => { v = { q: $('#xq').value, a: $('#xa').value }; if (!v.q.trim()) { toast(tt('Hãy nhập nội dung câu hỏi.', 'Enter the question text.'), 'err'); return false; } return true; } }]);
     if (ok && v) act('addExtra', v);
   }
@@ -553,7 +557,7 @@
     h += '<div class="sec">' + tt('Âm thanh', 'Audio') + '</div><div class="sgrid">';
     h += '<label class="chk"><input type="checkbox" data-b="sfx"' + (D.sfx ? ' checked' : '') + '>' + tt('Hiệu ứng âm thanh', 'Sound effects') + '</label>';
     h += '<label><span>' + tt('Âm lượng hiệu ứng', 'Effects volume') + '</span><input type="range" min="0" max="1" step="0.05" data-r="sfxVol" value="' + D.sfxVol + '"></label>';
-    h += '<div class="fld"><span>' + tt('Nhạc nền', 'Background music') + '</span><div class="muted">' + esc(D.musicName || (D.musicUrl ? tt('Đã có nhạc', 'Music set') : tt('Chưa có', 'None'))) + '</div><button class="btn btn-ghost sm" data-up="musicUrl" data-kind="audio">' + tt('Tải nhạc', 'Upload') + '</button> <button class="btn btn-ghost sm" data-clear="musicUrl">' + tt('Xóa', 'Remove') + '</button></div>';
+    h += '<div class="fld"><span>' + tt('Nhạc nền', 'Background music') + '</span><div class="muted">' + esc(D.musicName || (D.musicUrl ? tt('Đã có nhạc', 'Music set') : tt('Chưa có', 'None'))) + '</div><button class="btn btn-ghost sm" data-up="musicUrl" data-kind="audio">' + tt('Tải nhạc', 'Upload') + '</button> ' + (D.musicUrl ? '<button class="btn btn-ghost sm" data-trymus="musicUrl">▶ ' + tt('Nghe thử', 'Preview') + '</button> ' : '') + '<button class="btn btn-ghost sm" data-clear="musicUrl">' + tt('Xóa', 'Remove') + '</button></div>';
     h += '<label><span>' + tt('Âm lượng nhạc nền', 'Music volume') + '</span><input type="range" min="0" max="1" step="0.05" data-r="musicVol" value="' + D.musicVol + '"></label>';
     h += '<label class="chk"><input type="checkbox" data-b="musicLoop"' + (D.musicLoop ? ' checked' : '') + '>' + tt('Lặp lại nhạc nền', 'Loop music') + '</label>';
     h += '<div class="fld"><span>' + tt('Nhạc chiến thắng', 'Victory music') + '</span><div class="muted">' + esc(D.fanfareName || (D.fanfareUrl ? tt('Đã có nhạc', 'Music set') : tt('Dùng nhạc có sẵn', 'Built-in fanfare'))) + '</div><button class="btn btn-ghost sm" data-up="fanfareUrl" data-kind="audio">' + tt('Tải nhạc', 'Upload') + '</button> <button class="btn btn-ghost sm" data-clear="fanfareUrl">' + tt('Xóa', 'Remove') + '</button></div></div>';
@@ -589,6 +593,7 @@
     if (t.dataset.tdel) { if (draft.teams.length > 2) { draft.teams.splice(+t.dataset.tdel, 1); markDirty(); renderSet(); } return; }
     if (t.id === 'setSave') { const ok = await saveSettings(draft); if (ok) { draft = null; setDirty = false; renderSet(); } return; }
     if (t.id === 'setReset') { draft = null; setDirty = false; renderSet(); return; }
+    if (t.dataset.trymus) return tryAudio(t, draft[t.dataset.trymus]);
     if (t.dataset.clear) { const k = t.dataset.clear; if (k.startsWith('shoe:')) draft.shoes[+k.slice(5)] = ''; else { draft[k] = ''; if (k === 'musicUrl') draft.musicName = ''; if (k === 'fanfareUrl') draft.fanfareName = ''; } markDirty(); renderSet(); return; }
     if (t.dataset.up) {
       const k = t.dataset.up, kind = t.dataset.kind;
@@ -604,6 +609,18 @@
       } catch (err) { toast(err.message, 'err', 6000); renderSet(); }
     }
   });
+  // nghe thử tệp nhạc ngay trên máy này để biết tệp có phát được không
+  let tryEl = null;
+  function tryAudio(btn, url) {
+    if (tryEl && !tryEl.paused) { tryEl.pause(); tryEl = null; btn.textContent = '▶ ' + tt('Nghe thử', 'Preview'); return; }
+    if (!url) return;
+    tryEl = new Audio(url); tryEl.volume = 0.8;
+    const stop = () => { if (tryEl) { tryEl.pause(); tryEl = null; } btn.textContent = '▶ ' + tt('Nghe thử', 'Preview'); };
+    tryEl.onerror = () => { stop(); toast(tt('Không phát được tệp nhạc này. Hãy tải lại tệp (mp3) trong Cài đặt.', 'This music file cannot play. Upload it again (mp3).'), 'err', 6000); };
+    tryEl.onended = stop;
+    tryEl.play().then(() => { btn.textContent = '■ ' + tt('Dừng', 'Stop'); setTimeout(() => { if (tryEl) stop(); }, 15000); }).catch(err => { if (tryEl && !tryEl.error) { stop(); toast(tt('Trình duyệt chặn phát nhạc: ', 'The browser blocked playback: ') + err.message, 'err', 6000); } });
+  }
+  const MIME = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', m4a: 'audio/mp4', aac: 'audio/aac', webm: 'audio/webm', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' };
   function pickFile(accept) {
     return new Promise(res => { const inp = $('#fileIn'); inp.value = ''; inp.accept = accept; inp.onchange = () => res(inp.files && inp.files[0] || null); inp.click(); });
   }
@@ -611,10 +628,13 @@
     const max = kind === 'audio' ? 25e6 : 8e6;
     if (file.size > max) throw new Error(tt('Tệp quá lớn (tối đa ', 'File too large (max ') + Math.round(max / 1e6) + 'MB).');
     const ext = (file.name.split('.').pop() || '').toLowerCase();
-    const r = await api('/api/admin', { op: 'uploadUrl', kind, ext, contentType: file.type });
+    // một số máy báo sai hoặc thiếu loại tệp (ví dụ mp3 thành rỗng/octet-stream): luôn gắn loại đúng theo đuôi tệp
+    const type = MIME[ext] || file.type || 'application/octet-stream';
+    const body = new File([file], file.name, { type });
+    const r = await api('/api/admin', { op: 'uploadUrl', kind, ext, contentType: type });
     let resp;
-    if (r.form) { const fd = new FormData(); fd.append('cacheControl', '3600'); fd.append('', file); resp = await fetch(r.uploadUrl, { method: r.method || 'PUT', body: fd }); }
-    else resp = await fetch(r.uploadUrl, { method: r.method || 'PUT', body: file, headers: { 'Content-Type': file.type || 'application/octet-stream' } });
+    if (r.form) { const fd = new FormData(); fd.append('cacheControl', '3600'); fd.append('', body); resp = await fetch(r.uploadUrl, { method: r.method || 'PUT', body: fd }); }
+    else resp = await fetch(r.uploadUrl, { method: r.method || 'PUT', body, headers: { 'Content-Type': type } });
     if (!resp.ok) throw new Error(tt('Tải tệp thất bại (', 'Upload failed (') + resp.status + ').');
     return r.publicUrl;
   }
@@ -637,7 +657,7 @@
     h += '<p class="note">' + tt('Trận mới sẽ chụp lại các câu đang Bật (theo thứ tự). Sửa ngân hàng không ảnh hưởng trận đang chơi. Số lượng câu không cố định: thêm hoặc tắt câu để thay đổi.', 'A new match snapshots the enabled questions (in order). Editing the bank does not affect the running match. Counts are not fixed: add or disable questions to change them.') + '</p>';
     h += '<label class="chk" style="margin:6px 0 12px"><input type="checkbox" id="bkShuf"' + (ST().shuffleQ ? ' checked' : '') + '>' + tt('Xáo trộn thứ tự câu hỏi khi tạo trận mới (độc lập với đảo vị trí hình)', 'Shuffle question order for new matches (separate from Shuffle Board)') + '</label>';
     h += '<table class="qt"><thead><tr><th>' + tt('Mã', 'ID') + '</th><th>' + tt('Nhóm', 'Group') + '</th><th>' + tt('Câu hỏi', 'Question') + '</th><th>' + tt('Đáp án', 'Answer') + '</th><th>' + tt('Bật', 'On') + '</th><th></th></tr></thead><tbody>';
-    h += list.map(q => '<tr class="' + (q.enabled === false ? 'off' : '') + '"><td class="id">' + esc(q.id) + '</td><td><span class="grp g-' + q.grp + '">' + esc(G2[q.grp] || q.grp) + '</span></td><td>' + esc(q.q_vi) + (q.q_en && q.q_en !== q.q_vi ? '<div class="muted">' + esc(q.q_en) + '</div>' : '') + '</td><td>' + (q.grp === 'est' ? esc(q.num) + ' ' + esc(q.unit || '') : esc(q.a_vi) + (q.a_en && q.a_en !== q.a_vi ? '<div class="muted">' + esc(q.a_en) + '</div>' : '')) + '</td><td><button class="sw' + (q.enabled !== false ? ' on' : '') + '" data-bk="toggle" data-id="' + esc(q.id) + '"' + (canEdit ? '' : ' disabled') + ' title="' + tt('Bật/Tắt', 'On/Off') + '"></button></td><td class="act">' + (canEdit ? '<button class="btn btn-ghost sm" data-bk="edit" data-id="' + esc(q.id) + '">' + tt('Sửa', 'Edit') + '</button> <button class="btn btn-danger sm" data-bk="del" data-id="' + esc(q.id) + '">' + tt('Xóa', 'Delete') + '</button>' : '') + '</td></tr>').join('');
+    h += list.map(q => '<tr class="' + (q.enabled === false ? 'off' : '') + '"><td class="id">' + esc(q.id) + '</td><td><span class="grp g-' + q.grp + '">' + esc(G2[q.grp] || q.grp) + '</span></td><td style="white-space:pre-line">' + esc(q.q_vi) + (q.q_en && q.q_en !== q.q_vi ? '<div class="muted">' + esc(q.q_en) + '</div>' : '') + '</td><td>' + (q.grp === 'est' ? esc(q.num) + ' ' + esc(q.unit || '') : esc(q.a_vi) + (q.a_en && q.a_en !== q.a_vi ? '<div class="muted">' + esc(q.a_en) + '</div>' : '')) + '</td><td><button class="sw' + (q.enabled !== false ? ' on' : '') + '" data-bk="toggle" data-id="' + esc(q.id) + '"' + (canEdit ? '' : ' disabled') + ' title="' + tt('Bật/Tắt', 'On/Off') + '"></button></td><td class="act">' + (canEdit ? '<button class="btn btn-ghost sm" data-bk="edit" data-id="' + esc(q.id) + '">' + tt('Sửa', 'Edit') + '</button> <button class="btn btn-danger sm" data-bk="del" data-id="' + esc(q.id) + '">' + tt('Xóa', 'Delete') + '</button>' : '') + '</td></tr>').join('');
     h += '</tbody></table>' + (list.length ? '' : '<p class="muted" style="margin-top:10px">' + tt('Không có câu hỏi phù hợp.', 'No matching questions.') + '</p>');
     $('#bankV').innerHTML = h;
     const qi = $('#bkQ'); if (qi && bankFilter._focus) { qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); }
@@ -670,7 +690,7 @@
     const G2 = GRP(), o = q || { grp: bankFilter.grp || 'main', enabled: true };
     const body = '<div class="row g2"><label class="fld"><span>' + tt('Nhóm', 'Group') + '</span><select class="inp" id="eqG">' + Object.keys(G2).map(k => '<option value="' + k + '"' + (o.grp === k ? ' selected' : '') + '>' + G2[k] + '</option>').join('') + '</select></label><label class="fld"><span>' + tt('Thứ tự', 'Order') + '</span><input class="inp" type="number" id="eqS" value="' + esc(o.sort || '') + '" placeholder="' + tt('tự động', 'auto') + '"></label></div>' +
       (q ? '<p class="note">' + tt('Mã câu hỏi: ', 'Question ID: ') + '<b>' + esc(q.id) + '</b> ' + tt('(không đổi)', '(stable)') + '</p>' : '') +
-      '<div class="fld"><span>' + tt('Câu hỏi (Tiếng Việt)', 'Question (Vietnamese)') + '</span><textarea class="inp" id="eqQv">' + esc(o.q_vi || '') + '</textarea></div><div class="fld"><span>' + tt('Câu hỏi (English)', 'Question (English)') + '</span><textarea class="inp" id="eqQe">' + esc(o.q_en || '') + '</textarea></div>' +
+      '<div class="fld"><span>' + tt('Câu hỏi (Tiếng Việt)', 'Question (Vietnamese)') + '</span><textarea class="inp" id="eqQv" rows="4">' + esc(o.q_vi || '') + '</textarea></div><div class="fld"><span>' + tt('Câu hỏi (English)', 'Question (English)') + '</span><textarea class="inp" id="eqQe" rows="4">' + esc(o.q_en || '') + '</textarea></div>' +
       '<div id="eqAns" class="row g2"><label class="fld"><span>' + tt('Đáp án (Tiếng Việt)', 'Answer (Vietnamese)') + '</span><input class="inp" id="eqAv" value="' + esc(o.a_vi || '') + '"></label><label class="fld"><span>' + tt('Đáp án (English)', 'Answer (English)') + '</span><input class="inp" id="eqAe" value="' + esc(o.a_en || '') + '"></label></div>' +
       '<div id="eqNum" class="row g2"><label class="fld"><span>' + tt('Đáp án chuẩn (số)', 'Correct answer (number)') + '</span><input class="inp" id="eqN" value="' + esc(o.num || '') + '" inputmode="decimal"></label><label class="fld"><span>' + tt('Đơn vị', 'Unit') + '</span><input class="inp" id="eqU" value="' + esc(o.unit || '') + '"></label></div>' +
       '<label class="chk"><input type="checkbox" id="eqE"' + (o.enabled !== false ? ' checked' : '') + '>' + tt('Bật (dùng cho trận tiếp theo)', 'Enabled (used in the next match)') + '</label><div class="lmsg" id="eqErr"></div>';

@@ -244,3 +244,12 @@
 @keyframes bnDroop{0%{transform:none}30%{transform:translateX(-8px) rotate(-6deg)}55%{transform:translateX(6px) rotate(5deg)}100%{transform:translateY(6px) rotate(-10deg)}}
 .banner .bic svg.face{width:104px;height:104px;stroke-width:1.6}
 .banner .bic svg.face .tongue{fill:#ff6b7d;stroke:none}
+/* ảnh nền bảng ô: hiện trọn ảnh, viền dư lấp bằng bản làm mờ của chính ảnh */
+.board.main{isolation:isolate;background-color:transparent}
+.board.main::before,.board.main::after{content:"";position:absolute;pointer-events:none;background-image:var(--bgi);background-position:center;background-repeat:no-repeat}
+.board.main::before{inset:-40px;z-index:-2;background-color:#0a1f4f;background-size:cover;filter:blur(28px) brightness(.55) saturate(1.1)}
+.board.main::after{inset:0;z-index:-1;background-size:contain}
+/* dòng ghi công */
+.credit{position:absolute;left:22px;bottom:12px;z-index:40;font-size:15px;font-weight:700;letter-spacing:.04em;color:rgba(170,210,245,.55);pointer-events:none}
+/* câu hỏi giữ nguyên chỗ MC xuống dòng */
+.qbig .qt,.msgp .qt,.panel .qprev .q,.fxcard b{white-space:pre-line}

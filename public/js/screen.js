@@ -74,6 +74,7 @@
       '<div class="fxo" id="fxo"></div><canvas id="fx" width="1920" height="1080"></canvas>' +
       '<div class="conn" id="conn"><i></i><span class="t" id="connT"></span></div>' +
       '<div class="audiohint" id="audioHint"></div>' +
+      '<div class="credit">App developed by Katy Nguyen</div>' +
       '<div class="toast" id="toast"></div>' +
       '<audio id="bgm" preload="auto"></audio><audio id="fan" preload="auto"></audio>';
   }
@@ -222,10 +223,18 @@
       if (qb.dataset.k !== key) {
         qb.dataset.k = key;
         $('#qbNo').textContent = TM.qLabel(c.ref);
-        const el = $('#qbText'); el.textContent = text; el.style.fontSize = (text.length > 160 ? 46 : text.length > 90 ? 56 : 68) + 'px';
+        $('#qbText').textContent = text; qb.dataset.fit = '';
       }
       const a = c.a ? '<span>' + tt('ĐÁP ÁN', 'ANSWER') + '</span>' + esc(P(c.a)) : '';
-      const qa = $('#qbAns'); if (qa.dataset.h !== a) { qa.dataset.h = a; qa.innerHTML = a; qa.classList.toggle('on', !!a); }
+      const qa = $('#qbAns'); if (qa.dataset.h !== a) { qa.dataset.h = a; qa.innerHTML = a; qa.classList.toggle('on', !!a); qb.dataset.fit = ''; }
+      if (!qb.dataset.fit) { qb.dataset.fit = '1'; fitBig(text); }
+    }
+    // cỡ chữ theo độ dài và số dòng (MC có thể xuống dòng), rồi thu nhỏ dần nếu vẫn tràn khung
+    function fitBig(text) {
+      const qb = $('#qbig'), el = $('#qbText'), lines = text.split('\n').length;
+      let fs = text.length > 160 || lines > 4 ? 46 : text.length > 90 || lines > 2 ? 56 : 68;
+      el.style.fontSize = fs + 'px';
+      while (fs > 28 && qb.scrollHeight > qb.clientHeight + 2) { fs -= 4; el.style.fontSize = fs + 'px'; }
     }
 
     /* ---------- khung thông báo (màn hình trình chiếu, bên phải bảng ô) ---------- */
@@ -525,6 +534,13 @@
     }
     let ducking = false;
     function duckMusic() { if (bgm.paused) return; ducking = true; let v = bgm.volume; const iv = setInterval(() => { v -= 0.06; if (v <= 0.02) { clearInterval(iv); bgm.pause(); ducking = false; } else bgm.volume = v; }, 60); }
+    // báo lỗi khi tệp nhạc không phát được (tệp hỏng, sai định dạng, đường dẫn hết hạn)
+    bgm.addEventListener('error', () => {
+      if (!bgm.getAttribute('src') || !localSound) return;
+      const code = bgm.error && bgm.error.code;
+      self.toast(tt('Không phát được nhạc nền', 'Background music could not play') + (code ? ' (' + (code === 4 ? tt('tệp không hỗ trợ hoặc không tải được', 'file not supported or not reachable') : 'mã ' + code) + ')' : '') + '. ' + tt('Hãy tải lại tệp nhạc trong Cài đặt.', 'Re-upload the music in Settings.'), 'err', 7000);
+    });
+    this.soundOn = () => localSound;
     function syncMusic() {
       const want = !!(pub && pub.music && pub.music.playing && pub.s.musicUrl && localSound && pub.view !== 'result');
       if (!want) { if (!bgm.paused && !ducking) bgm.pause(); return; }
