@@ -236,7 +236,10 @@
       const k = board.kind + ':' + board.tiles.length;
       if (k !== kind || key !== gameKey || cells.length !== board.tiles.length) { kind = k; gameKey = key; build(board.tiles.length); }
       el.className = 'board ' + board.kind + (board.pickable ? ' pickable' : '');
-      if (board.kind === 'main') el.style.backgroundImage = TM.cssUrl(bgUrl); else el.style.backgroundImage = 'none';
+      // ảnh nền bảng ô hiện trọn vẹn (không cắt); phần dư được lấp bằng chính ảnh đó làm mờ (xem .board.main::before/::after)
+      el.style.backgroundImage = 'none';
+      // đường dẫn tuyệt đối: url() trong biến CSS được tính theo tệp .css chứ không theo trang
+      if (board.kind === 'main') el.style.setProperty('--bgi', TM.cssUrl(bgUrl && new URL(bgUrl, location.href).href)); else el.style.removeProperty('--bgi');
       cur = board.tiles;
       board.tiles.forEach((t, i) => {
         const cell = cells[i], tl = cell.querySelector('.tile'), img = cell.querySelector('.back img'), p = prev[i] || { s: 'd' };
