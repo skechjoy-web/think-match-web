@@ -26,7 +26,7 @@
         '<div class="w-shoe l2"><img class="js-shoe" data-slot="0" alt=""></div><div class="w-shoe r2"><img class="js-shoe" data-slot="6" alt=""></div>' +
         '<div class="w-shoe l"><img class="js-shoe" data-slot="1" alt=""></div><div class="w-shoe r"><img class="js-shoe" data-slot="13" alt=""></div>' +
         '<div class="w-corner">' +
-          H('<div class="lang js-lang"><button data-l="vi">VI</button><button data-l="en">EN</button></div><button class="iconbtn js-music"></button>') +
+          H('<div class="lang js-lang"><button data-l="vi">VI</button><button data-l="en">EN</button></div><button class="iconbtn js-music"></button><input type="range" class="mvol js-mvol" min="0" max="1" step="0.05">') +
           P('<button class="iconbtn js-pair" style="display:none"></button>') +
           '<button class="iconbtn js-sound"></button>' +
           H('<button class="iconbtn js-open"></button>') +
@@ -45,7 +45,7 @@
           '<div class="h-brand"><div class="h-logo brand-logo js-logo"></div><div class="h-sep"></div><div class="h-title js-pname"></div></div>' +
           '<div class="h-clock idle" id="hClock"><div class="rb" id="hRound"></div><div class="ct tnum" id="hTime">--:--</div></div>' +
           '<div class="h-tools">' +
-            H('<div class="lang js-lang"><button data-l="vi">VI</button><button data-l="en">EN</button></div><button class="iconbtn js-music"></button>') +
+            H('<div class="lang js-lang"><button data-l="vi">VI</button><button data-l="en">EN</button></div><button class="iconbtn js-music"></button><input type="range" class="mvol js-mvol" min="0" max="1" step="0.05">') +
             P('<button class="iconbtn js-pair" style="display:none"></button>') +
             '<button class="iconbtn js-sound"></button>' +
             H('<button class="iconbtn" id="btnPause"></button>') +
@@ -524,8 +524,10 @@
       const sp = srcPoint(), T = 2600 * hold + 900;
       anim(el, [at(sp, 0.06, 0.2, -20), Object.assign(at(C0, 1.08, 1, 3), { offset: 0.22 }), Object.assign(at(C0, 1, 1, 0), { offset: 0.3 }), Object.assign(at(C0, 1, 1, 0), { offset: 0.78 }), at(SIDE, 0.25, 0, 0)], T);
     }
+    // nhạc nền nhỏ dần khi chúc mừng đội thắng, rồi tự phát lại sau màn pháo hoa
+    let quietUntil = 0;
     function celebrate() {
-      duckMusic();
+      duckMusic(); quietUntil = Date.now() + 9000; setTimeout(syncMusic, 9100);
       if (localSound && pub.s.sfx !== false) {
         if (pub.s.fanfareUrl) { try { if (fan.getAttribute('src') !== pub.s.fanfareUrl) fan.src = pub.s.fanfareUrl; fan.currentTime = 0; fan.volume = Math.min(1, (pub.s.sfxVol || 0.8) + 0.1); const pr = fan.play(); if (pr && pr.catch) pr.catch(() => sfx.fanfare()); } catch (e) { sfx.fanfare(); } }
         else sfx.fanfare();
@@ -542,7 +544,7 @@
     });
     this.soundOn = () => localSound;
     function syncMusic() {
-      const want = !!(pub && pub.music && pub.music.playing && pub.s.musicUrl && localSound && pub.view !== 'result');
+      const want = !!(pub && pub.music && pub.music.playing && pub.s.musicUrl && localSound) && Date.now() >= quietUntil;
       if (!want) { if (!bgm.paused && !ducking) bgm.pause(); return; }
       if (bgm.getAttribute('src') !== pub.s.musicUrl) bgm.src = pub.s.musicUrl;
       bgm.loop = pub.s.musicLoop !== false; if (!ducking) bgm.volume = pub.s.musicVol == null ? 0.5 : pub.s.musicVol;
