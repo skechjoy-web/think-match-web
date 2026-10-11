@@ -215,4 +215,23 @@ assert.ok(pf.warnings.length >= 3);
   assert.strictEqual(E.mergeSettings(s4.settings, { teams: [1, 2, 3, 4, 5, 6].map(i => ({ name: 'T' + i })) }).teams.length, 4);
   assert.strictEqual(E.mergeSettings(s4.settings, { teams: [{ name: 'only' }] }).teams.length, 2);
 }
+// nhạc nền: tự phát khi lưu nhạc mới, vào trận mới, chơi thử; chỉnh âm lượng từ trang MC
+{
+  let n2 = 9_000_000; const s2 = E.ensure(null);
+  const a2 = a => { E.advance(s2, n2); E.apply(s2, a, n2, { bank: bank() }); };
+  assert.strictEqual(s2.game.music.playing, false);
+  let pm = s2.settings.musicUrl; s2.settings = E.mergeSettings(s2.settings, { musicUrl: 'https://x.supabase.co/a.mp3' }); E.settingsSaved(s2, pm);
+  assert.strictEqual(s2.game.music.playing, true);
+  a2({ type: 'music', playing: false });
+  a2({ type: 'newMatch', teams: ['A', 'B'], first: 0 });
+  assert.strictEqual(s2.game.music.playing, true);
+  a2({ type: 'musicVol', v: 0.2 }); assert.strictEqual(s2.settings.musicVol, 0.2);
+  a2({ type: 'musicVol', v: 7 }); assert.strictEqual(s2.settings.musicVol, 1);
+  a2({ type: 'music', playing: false }); a2({ type: 'practiceStart' });
+  assert.strictEqual(s2.game.music.playing, true);
+  pm = s2.settings.musicUrl; s2.settings = E.mergeSettings(s2.settings, { musicUrl: '' }); E.settingsSaved(s2, pm);
+  assert.strictEqual(s2.game.music.playing, false);
+  s2.settings = E.mergeSettings(s2.settings, { musicUrl: 'https://x.supabase.co/b.mp3', musicAuto: false }); E.settingsSaved(s2, '');
+  assert.strictEqual(s2.game.music.playing, false);
+}
 console.log('engine tests OK');

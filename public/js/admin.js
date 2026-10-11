@@ -106,7 +106,7 @@
     if (!sync) {
       sync = new TM.Sync({ onState: (p, prev) => { pub = p; if (p.v > privV) loadPriv(); scr.update(p, prev); }, onStatus: s => { syncStatus = s; scr.setStatus(s); render(); } });
       scr = new TM.Screen({
-        host: true, stage: $('#stage'), sync, soundKey: 'tm_host_sound', soundDefault: false,
+        host: true, stage: $('#stage'), sync, soundKey: 'tm_host_sound', soundDefault: true,
         onPick: i => act('pick', { i }), canPick: () => syncStatus !== 'off',
         onRender: () => render(), onTools: () => renderHostTools(), onClock: () => tickPanel(),
       });
@@ -180,11 +180,19 @@
     const sc = g.m.scores.length === 2 ? teamName(0) + ' ' + g.m.scores[0] + ' – ' + g.m.scores[1] + ' ' + teamName(1) : g.m.scores.map((v, k) => teamName(k) + ' ' + v).join(' · ');
     put($('#wNote'), on ? '<span>' + esc(fmt(tt('Trận đang diễn ra: {r} · {s}', 'Match in progress: {r} · {s}'), { r: rn, s: sc })) + '</span>' + btn('newMatchDlg', tt('Trận mới', 'New match')) : '');
   }
+  // thanh âm lượng nhạc nền trên trang MC: kéo là màn hình trình chiếu đổi âm lượng ngay
+  let mvolT = 0;
+  document.addEventListener('input', e => {
+    const r = e.target.closest && e.target.closest('.js-mvol'); if (!r) return;
+    r.title = tt('Âm lượng nhạc nền', 'Music volume') + ': ' + Math.round(r.value * 100) + '%';
+    clearTimeout(mvolT); mvolT = setTimeout(() => { mvolT = 0; act('musicVol', { v: Number(r.value) }, true); }, 150);
+  });
   function renderHostTools() {
     if (!priv) return;
     const g = G(), mus = !!(g.music && g.music.playing);
     $$('.js-lang button').forEach(b => b.classList.toggle('on', b.dataset.l === TM.lang));
     $$('.js-music').forEach(b => { b.innerHTML = TM.IC.note; b.classList.toggle('lit', mus); b.classList.toggle('off', !ST().musicUrl); b.title = ST().musicUrl ? (mus ? tt('Tắt nhạc nền', 'Stop music') : tt('Bật nhạc nền', 'Play music')) : tt('Chưa có nhạc nền: tải trong Cài đặt', 'No music yet: upload in Settings'); });
+    $$('.js-mvol').forEach(r => { if (document.activeElement !== r && !mvolT) r.value = ST().musicVol == null ? 0.5 : ST().musicVol; r.disabled = !ST().musicUrl; r.title = tt('Âm lượng nhạc nền', 'Music volume') + ': ' + Math.round(r.value * 100) + '%'; });
     $$('.js-open').forEach(b => { b.innerHTML = TM.IC.screen; b.title = tt('Mở màn hình trình chiếu', 'Open projection screen'); });
     $$('.js-settings').forEach(b => { if (b.classList.contains('iconbtn')) b.innerHTML = TM.IC.gear; b.title = tt('Cài đặt', 'Settings'); });
     const pb = $('#btnPause'); pb.innerHTML = g.paused ? TM.IC.play : TM.IC.pause; pb.classList.toggle('lit', !!g.paused); pb.title = g.paused ? tt('Tiếp tục', 'Resume') : tt('Tạm dừng', 'Pause'); pb.disabled = !g.created && !g.prac;
@@ -560,6 +568,7 @@
     h += '<div class="fld"><span>' + tt('Nhạc nền', 'Background music') + '</span><div class="muted">' + esc(D.musicName || (D.musicUrl ? tt('Đã có nhạc', 'Music set') : tt('Chưa có', 'None'))) + '</div><button class="btn btn-ghost sm" data-up="musicUrl" data-kind="audio">' + tt('Tải nhạc', 'Upload') + '</button> ' + (D.musicUrl ? '<button class="btn btn-ghost sm" data-trymus="musicUrl">▶ ' + tt('Nghe thử', 'Preview') + '</button> ' : '') + '<button class="btn btn-ghost sm" data-clear="musicUrl">' + tt('Xóa', 'Remove') + '</button></div>';
     h += '<label><span>' + tt('Âm lượng nhạc nền', 'Music volume') + '</span><input type="range" min="0" max="1" step="0.05" data-r="musicVol" value="' + D.musicVol + '"></label>';
     h += '<label class="chk"><input type="checkbox" data-b="musicLoop"' + (D.musicLoop ? ' checked' : '') + '>' + tt('Lặp lại nhạc nền', 'Loop music') + '</label>';
+    h += '<label class="chk"><input type="checkbox" data-b="musicAuto"' + (D.musicAuto !== false ? ' checked' : '') + '>' + tt('Tự phát nhạc nền khi lưu nhạc mới, vào trận mới và chơi thử', 'Auto-play music after saving new music, on a new match and in practice') + '</label>';
     h += '<div class="fld"><span>' + tt('Nhạc chiến thắng', 'Victory music') + '</span><div class="muted">' + esc(D.fanfareName || (D.fanfareUrl ? tt('Đã có nhạc', 'Music set') : tt('Dùng nhạc có sẵn', 'Built-in fanfare'))) + '</div><button class="btn btn-ghost sm" data-up="fanfareUrl" data-kind="audio">' + tt('Tải nhạc', 'Upload') + '</button> <button class="btn btn-ghost sm" data-clear="fanfareUrl">' + tt('Xóa', 'Remove') + '</button></div></div>';
     const SD = D.sounds || {};
     h += '<div class="sec">' + tt('Âm thanh hiệu ứng', 'Sound effects') + '</div><p class="note">' + tt('Chọn tiếng cho từng lúc trong trận. Bấm ▶ để nghe thử trên máy này. Nếu đã tải “Nhạc chiến thắng” ở trên thì nhạc đó được dùng khi chúc mừng.', 'Pick a sound for each moment. Press ▶ to preview on this device. An uploaded victory music replaces the celebration sound.') + '</p><div class="sgrid">';
